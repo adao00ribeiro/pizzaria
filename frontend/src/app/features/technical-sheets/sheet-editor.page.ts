@@ -50,6 +50,7 @@ import { SheetsService } from './sheets.service';
 interface ItemOption {
   key: string;
   label: string;
+  name: string;
   type: SheetItemType;
   id: string;
   unit: Unit;
@@ -103,6 +104,8 @@ export class SheetEditorPage {
   private readonly route = inject(ActivatedRoute);
   private readonly fb = inject(FormBuilder);
 
+  private readonly knownLabels = new Map<string, string>();
+
   readonly unitLabels = UNIT_LABELS;
   readonly itemColumns = ['label', 'quantity', 'unit', 'actions'];
 
@@ -138,17 +141,18 @@ export class SheetEditorPage {
   private buildItemGroup(value: { ref: string; quantity: number; unit: string } = { ref: '', quantity: 0, unit: 'g' }) {
     return this.fb.nonNullable.group({
       ref: [value.ref, [Validators.required]],
-      quantity: [value.quantity, [Validators.required, Validators.min(0.0001)]],
-      unit: [value.unit, [Validators.required]],
+      quantity: [value.quantity > 0 ? value.quantity : (null as any), [Validators.required, Validators.min(0.0001)]],
+      unit: [value.unit || 'g', [Validators.required]],
     });
   }
 
-  /** Combina ingredientes + preparos numa única lista para o autocomplete. */
-  readonly options = computed(() => {
-    const all: ItemOption[] = [
+  /** Catálogo unificado de ingredientes + preparos (imutável pelo filtro de digitação). */
+  readonly allOptions = computed<ItemOption[]>(() => {
+    return [
       ...this.ingredients().map((i: Ingredient) => ({
         key: `Ingredient:${i.id}`,
         label: `${i.name} (ingrediente)`,
+        name: i.name,
         type: 'Ingredient' as SheetItemType,
         id: i.id,
         unit: i.purchaseUnit,
@@ -156,13 +160,20 @@ export class SheetEditorPage {
       ...this.preparations().map((p: Preparation) => ({
         key: `Preparation:${p.id}`,
         label: `${p.name} (preparo)`,
+        name: p.name,
         type: 'Preparation' as SheetItemType,
         id: p.id,
         unit: p.yieldUnit,
       })),
     ];
+  });
+
+  /** Opções filtradas exibidas no popup do autocomplete. */
+  readonly filteredOptions = computed(() => {
+    const all = this.allOptions();
     const t = this.filterTerm().trim().toLowerCase();
-    return t ? all.filter((o) => o.label.toLowerCase().includes(t)) : all;
+    if (!t) return all;
+    return all.filter((o) => o.label.toLowerCase().includes(t) || o.name.toLowerCase().includes(t));
   });
 
   constructor() {
@@ -251,6 +262,9 @@ export class SheetEditorPage {
         item.type === 'Ingredient'
           ? `Ingredient:${item.ingredientId}`
           : `Preparation:${item.preparationId}`;
+      if (item.description) {
+        this.knownLabels.set(ref, item.description);
+      }
       arr.push(
         this.buildItemGroup({
           ref,
@@ -277,14 +291,33 @@ export class SheetEditorPage {
     this.filterTerm.set(term);
   }
 
-  /** Ao escolher uma opção, ajusta a unidade padrão para a unidade do insumo. */
-  onOptionSelected(index: number, option: ItemOption): void {
-    this.items.at(index).patchValue({ unit: option.unit });
+  onItemFocus(value: string): void {
+    const opt = this.allOptions().find((o) => o.name === value || o.label === value || o.key === value);
+    if (opt) {
+      this.filterTerm.set('');
+    } else {
+      this.filterTerm.set(value ?? '');
+    }
+  }
+
+  /** Ao escolher uma opção no autocomplete, ajusta a unidade padrão e guarda o label. */
+  onOptionSelected(index: number, key: string): void {
+    const opt = this.allOptions().find((o) => o.key === key);
+    if (opt) {
+      this.items.at(index).patchValue({
+        ref: opt.key,
+        unit: opt.unit,
+      });
+      this.knownLabels.set(opt.key, opt.name);
+    }
   }
 
   /** `displayWith` do autocomplete: converte a chave em texto legível. */
   displayOption(value: string): string {
-    return this.options().find((o) => o.key === value)?.label ?? value;
+    if (!value) return '';
+    const opt = this.allOptions().find((o) => o.key === value);
+    if (opt) return opt.name;
+    return this.knownLabels.get(value) ?? value;
   }
 
   // -------------------------------------------------------------------------
@@ -316,30 +349,33 @@ export class SheetEditorPage {
     if (!productId || !sizeId) {
       return null;
     }
-    const items = this.items.getRawValue().map((it) => {
-      // A chave pode vir do autocomplete ("Ingredient:<id>") ou do nome
-      // recarregado de uma ficha existente — nos dois casos resolvemos abaixo.
-      const [maybeType, maybeId] = it.ref.split(':');
-      const type: SheetItemType =
-        maybeType === 'Ingredient' || maybeType === 'Preparation'
-          ? maybeType
-          : this.resolveType(it.ref);
-      const id =
-        type === 'Ingredient'
-          ? maybeType === 'Ingredient'
-            ? maybeId
-            : this.ingredients().find((i) => i.name === it.ref)?.id
-          : maybeType === 'Preparation'
-            ? maybeId
-            : this.preparations().find((p) => p.name === it.ref)?.id;
-      return {
-        type,
-        ingredientId: type === 'Ingredient' ? id : undefined,
-        preparationId: type === 'Preparation' ? id : undefined,
-        quantity: Number(it.quantity),
-        unit: it.unit as Unit,
-      };
-    });
+    const items = this.items
+      .getRawValue()
+      .filter((it) => !!it.ref && Number(it.quantity) > 0)
+      .map((it) => {
+        // A chave pode vir do autocomplete ("Ingredient:<id>") ou do nome
+        // recarregado de uma ficha existente — nos dois casos resolvemos abaixo.
+        const [maybeType, maybeId] = it.ref.split(':');
+        const type: SheetItemType =
+          maybeType === 'Ingredient' || maybeType === 'Preparation'
+            ? maybeType
+            : this.resolveType(it.ref);
+        const id =
+          type === 'Ingredient'
+            ? maybeType === 'Ingredient'
+              ? maybeId
+              : this.ingredients().find((i) => i.name === it.ref)?.id
+            : maybeType === 'Preparation'
+              ? maybeId
+              : this.preparations().find((p) => p.name === it.ref)?.id;
+        return {
+          type,
+          ingredientId: type === 'Ingredient' ? id : undefined,
+          preparationId: type === 'Preparation' ? id : undefined,
+          quantity: Number(it.quantity),
+          unit: it.unit as Unit,
+        };
+      });
     return {
       productId,
       sizeId,

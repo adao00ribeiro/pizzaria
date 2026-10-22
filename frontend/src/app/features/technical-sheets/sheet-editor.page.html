@@ -1,7 +1,10 @@
 <div class="page">
   <div class="page-header">
-    <h1 class="page-title">{{ isNew ? 'Nova ficha técnica' : 'Editar ficha técnica' }}</h1>
-    <a mat-stroked-button routerLink="/sheets">
+    <div class="header-left">
+      <h1 class="page-title">{{ isNew ? 'Nova ficha técnica' : 'Editar ficha técnica' }}</h1>
+      <p class="page-subtitle">Configure os insumos, perdas e margem para calcular o preço ideal de venda.</p>
+    </div>
+    <a mat-stroked-button routerLink="/sheets" class="back-link">
       <mat-icon>arrow_back</mat-icon>
       Voltar para a lista
     </a>
@@ -46,13 +49,15 @@
               }
             </mat-form-field>
 
-            <p class="hint-text">
-              O preço sugerido será calculado a partir do custo dos itens mais os custos indiretos.
-            </p>
+            <div class="hint-box">
+              <mat-icon class="hint-icon">info</mat-icon>
+              <span>O preço sugerido será calculado automaticamente a partir do custo dos itens mais os custos indiretos.</span>
+            </div>
 
             <div class="form-actions">
               <button mat-flat-button color="primary" type="button" matStepperNext [disabled]="!step1Valid()">
                 Próximo passo
+                <mat-icon iconPositionEnd>arrow_forward</mat-icon>
               </button>
             </div>
           </form>
@@ -61,52 +66,83 @@
         <!-- ② Ingredientes e preparos -->
         <mat-step [editable]="true" [completed]="step2Valid()" label="Ingredientes e preparos">
           <ng-template matStepContent>
-            <div class="items-list" formArrayName="items">
-              @if (items.length === 0) {
-                <p class="hint-text">Adicione ao menos um ingrediente ou preparo que compõe a receita.</p>
-              }
+            <form [formGroup]="form" class="step-content">
+              <div class="items-header">
+                <div>
+                  <h3 class="items-title">Composição da Receita</h3>
+                  <p class="items-subtitle">Adicione os ingredientes e preparos (bases, molhos) que compõem este produto.</p>
+                </div>
+                <div class="items-count-badge">
+                  {{ items.length }} {{ items.length === 1 ? 'item' : 'itens' }}
+                </div>
+              </div>
 
-              @for (item of items.controls; track $index; let i = $index) {
-                <div class="item-row">
-                  <div [formGroupName]="i" class="item-row-inner">
-                    <mat-form-field appearance="outline" class="item-autocomplete">
+              <div class="items-list" formArrayName="items">
+                @if (items.length === 0) {
+                  <div class="empty-state">
+                    <mat-icon class="empty-icon">restaurant_menu</mat-icon>
+                    <p class="empty-title">Nenhum ingrediente ou preparo adicionado</p>
+                    <p class="empty-desc">Adicione ao menos um insumo que compõe a receita para calcular o custo direto.</p>
+                  </div>
+                }
+
+                @for (item of items.controls; track $index; let i = $index) {
+                  <div class="item-card" [formGroupName]="i">
+                    <div class="item-index-badge">{{ i + 1 }}</div>
+
+                    <mat-form-field appearance="outline" class="item-autocomplete" subscriptSizing="dynamic">
                       <mat-label>Ingrediente ou preparo</mat-label>
                       <input
                         matInput
-                        [formControlName]="'ref'"
+                        formControlName="ref"
                         [matAutocomplete]="auto"
                         (input)="onItemFilter($any($event.target).value)"
+                        (focus)="onItemFocus($any($event.target).value)"
+                        placeholder="Busque pelo nome..."
                         autocomplete="off"
                       />
+                      <mat-icon matPrefix class="field-prefix-icon">search</mat-icon>
                       <mat-autocomplete
-                        #auto
+                        #auto="matAutocomplete"
                         [displayWith]="displayOption.bind(this)"
-                        (optionSelected)="onOptionSelected(i, $any($event.option.value))"
+                        (optionSelected)="onOptionSelected(i, $event.option.value)"
                       >
-                        @for (opt of options(); track opt.key) {
-                          <mat-option [value]="opt.key">{{ opt.label }}</mat-option>
+                        @for (opt of filteredOptions(); track opt.key) {
+                          <mat-option [value]="opt.key">
+                            <span class="badge-type" [class.badge-prep]="opt.type === 'Preparation'">
+                              {{ opt.type === 'Preparation' ? 'Preparo' : 'Ingrediente' }}
+                            </span>
+                            <span class="opt-label">{{ opt.name }}</span>
+                          </mat-option>
                         } @empty {
                           <mat-option disabled>Nenhum insumo encontrado</mat-option>
                         }
                       </mat-autocomplete>
                       @if (item.get('ref')?.hasError('required')) {
-                        <mat-error>Selecione o ingrediente ou preparo</mat-error>
+                        <mat-error>Selecione um insumo</mat-error>
                       }
                     </mat-form-field>
 
-                    <mat-form-field appearance="outline" class="item-qty">
+                    <mat-form-field appearance="outline" class="item-qty" subscriptSizing="dynamic">
                       <mat-label>Quantidade</mat-label>
-                      <input matInput type="number" min="0" step="0.001" [formControlName]="'quantity'" />
-                      @if (item.get('quantity')?.hasError('min')) {
-                        <mat-error>Maior que zero</mat-error>
+                      <input
+                        matInput
+                        type="number"
+                        min="0.0001"
+                        step="any"
+                        formControlName="quantity"
+                        placeholder="0.00"
+                      />
+                      @if (item.get('quantity')?.hasError('min') || item.get('quantity')?.hasError('required')) {
+                        <mat-error>Qtd. > 0</mat-error>
                       }
                     </mat-form-field>
 
-                    <mat-form-field appearance="outline" class="item-unit">
+                    <mat-form-field appearance="outline" class="item-unit" subscriptSizing="dynamic">
                       <mat-label>Unidade</mat-label>
-                      <mat-select [formControlName]="'unit'">
+                      <mat-select formControlName="unit">
                         @for (u of unitLabels | keyvalue; track u.key) {
-                          <mat-option [value]="u.key">{{ u.value }}</mat-option>
+                          <mat-option [value]="u.key">{{ u.value }} ({{ u.key }})</mat-option>
                         }
                       </mat-select>
                     </mat-form-field>
@@ -114,28 +150,35 @@
                     <button
                       mat-icon-button
                       type="button"
-                      matTooltip="Remover item"
+                      class="item-delete-btn"
+                      matTooltip="Remover este item"
                       aria-label="Remover item"
                       (click)="removeItem(i)"
                     >
-                      <mat-icon>delete</mat-icon>
+                      <mat-icon>delete_outline</mat-icon>
                     </button>
                   </div>
-                </div>
-              }
-            </div>
+                }
+              </div>
 
-            <div class="form-actions">
-              <button mat-stroked-button type="button" (click)="addItem()">
-                <mat-icon>add</mat-icon>
-                Adicionar item
-              </button>
-              <span class="spacer"></span>
-              <button mat-button type="button" matStepperPrevious>Voltar</button>
-              <button mat-flat-button color="primary" type="button" matStepperNext [disabled]="!step2Valid()">
-                Próximo passo
-              </button>
-            </div>
+              <div class="items-actions-row">
+                <button mat-stroked-button color="primary" type="button" class="add-item-btn" (click)="addItem()">
+                  <mat-icon>add</mat-icon>
+                  Adicionar item
+                </button>
+              </div>
+
+              <div class="form-actions">
+                <button mat-button type="button" matStepperPrevious>
+                  <mat-icon>arrow_back</mat-icon>
+                  Voltar
+                </button>
+                <button mat-flat-button color="primary" type="button" matStepperNext [disabled]="!step2Valid()">
+                  Próximo passo
+                  <mat-icon iconPositionEnd>arrow_forward</mat-icon>
+                </button>
+              </div>
+            </form>
           </ng-template>
         </mat-step>
 
@@ -168,76 +211,94 @@
                   <mat-error>Informe um valor entre 0 e 100</mat-error>
                 }
               </mat-form-field>
-            </form>
 
-            <div class="form-actions">
-              <button mat-button type="button" matStepperPrevious>Voltar</button>
-              <button mat-flat-button color="primary" type="button" matStepperNext [disabled]="!step3Valid()">
-                Ver resultado
-              </button>
-            </div>
+              <div class="form-actions">
+                <button mat-button type="button" matStepperPrevious>
+                  <mat-icon>arrow_back</mat-icon>
+                  Voltar
+                </button>
+                <button mat-flat-button color="primary" type="button" matStepperNext [disabled]="!step3Valid()">
+                  Ver resultado
+                  <mat-icon iconPositionEnd>arrow_forward</mat-icon>
+                </button>
+              </div>
+            </form>
           </ng-template>
         </mat-step>
 
         <!-- ④ Resultado -->
         <mat-step label="Resultado">
           <ng-template matStepContent>
-            @if (previewError()) {
-              <p class="error-text">{{ previewError() }}</p>
-            } @else if (!result()) {
-              <p class="hint-text">Preencha os passos anteriores para ver o cálculo.</p>
-            } @else {
-              <pz-result-cards
-                [directCost]="result()!.directCost"
-                [indirectCost]="result()!.indirectCost"
-                [totalCost]="result()!.totalCost"
-                [price]="result()!.suggestedPrice"
-                [cardPrice]="result()!.cardPrice"
-                [taxValue]="result()!.taxValue"
-                [profit]="result()!.estimatedProfit"
-                [margin]="result()!.marginRealPercentage"
-                [marginTarget]="result()!.marginTarget"
-                [status]="result()!.status"
-              />
+            <div class="result-step-content">
+              @if (previewError()) {
+                <p class="error-text">{{ previewError() }}</p>
+              } @else if (!result()) {
+                <p class="hint-text">Preencha os passos anteriores para ver o cálculo.</p>
+              } @else {
+                <pz-result-cards
+                  [directCost]="result()!.directCost"
+                  [indirectCost]="result()!.indirectCost"
+                  [totalCost]="result()!.totalCost"
+                  [price]="result()!.suggestedPrice"
+                  [cardPrice]="result()!.cardPrice"
+                  [taxValue]="result()!.taxValue"
+                  [profit]="result()!.estimatedProfit"
+                  [margin]="result()!.marginRealPercentage"
+                  [marginTarget]="result()!.marginTarget"
+                  [status]="result()!.status"
+                />
 
-              @if (result()!.breakdown.length > 0) {
-                <h2 class="card-title" style="margin-top: 24px;">Detalhamento do custo</h2>
-                <ul class="detail-list">
-                  @for (line of result()!.breakdown; track line.label) {
-                    <li>
-                      <span class="detail-label">{{ line.label }}</span>
-                      <span class="detail-value">{{ line.cost | brl }}</span>
-                    </li>
-                  }
-                </ul>
+                @if (result()!.breakdown.length > 0) {
+                  <h3 class="breakdown-title" style="margin-top: 24px;">Detalhamento do custo</h3>
+                  <ul class="detail-list">
+                    @for (line of result()!.breakdown; track line.label) {
+                      <li>
+                        <span class="detail-label">{{ line.label }}</span>
+                        <span class="detail-value">{{ line.cost | brl }}</span>
+                      </li>
+                    }
+                  </ul>
+                }
               }
-            }
 
-            <div class="form-actions">
-              <button mat-button type="button" matStepperPrevious>Voltar</button>
-              <button
-                mat-flat-button
-                color="primary"
-                type="button"
-                (click)="save()"
-                [disabled]="saving() || !step1Valid() || !step2Valid() || !step3Valid()"
-              >
-                <mat-icon>save</mat-icon>
-                {{ saving() ? 'Salvando...' : 'Salvar ficha técnica' }}
-              </button>
+              <div class="form-actions">
+                <button mat-button type="button" matStepperPrevious>
+                  <mat-icon>arrow_back</mat-icon>
+                  Voltar
+                </button>
+                <button
+                  mat-flat-button
+                  color="primary"
+                  type="button"
+                  (click)="save()"
+                  [disabled]="saving() || !step1Valid() || !step2Valid() || !step3Valid()"
+                >
+                  <mat-icon>save</mat-icon>
+                  {{ saving() ? 'Salvando...' : 'Salvar ficha técnica' }}
+                </button>
+              </div>
             </div>
           </ng-template>
         </mat-step>
       </mat-stepper>
 
-      <!-- Painel lateral sticky com os cards de resultado (docs/08 §3.5) -->
+      <!-- Painel lateral sticky com os cards de resultado -->
       <aside class="sticky-panel" aria-label="Resultado do cálculo em tempo real">
         <mat-card class="section-card">
           <mat-card-content>
-            <h2 class="card-title">Cálculo ao vivo</h2>
+            <div class="card-header-live">
+              <h2 class="card-title">
+                <mat-icon>analytics</mat-icon>
+                Cálculo ao vivo
+              </h2>
+              <span class="live-dot" matTooltip="Atualizado em tempo real" aria-label="Ao vivo"></span>
+            </div>
 
             @if (previewing()) {
-              <p class="hint-text">Recalculando...</p>
+              <div class="recalc-indicator">
+                <mat-spinner diameter="16" />
+                <span>Recalculando valores...</span>
+              </div>
             }
 
             @if (previewError()) {
@@ -257,6 +318,7 @@
               />
 
               @if (result()!.breakdown.length > 0) {
+                <h3 class="breakdown-title">Composição do custo</h3>
                 <ul class="detail-list">
                   @for (line of result()!.breakdown; track line.label) {
                     <li>
@@ -267,9 +329,12 @@
                 </ul>
               }
             } @else {
-              <p class="hint-text">
-                Escolha o produto e o tamanho e adicione os itens: o preço sugerido aparece aqui a cada digitação.
-              </p>
+              <div class="live-empty">
+                <mat-icon class="live-empty-icon">calculate</mat-icon>
+                <p class="hint-text">
+                  Selecione o produto, tamanho e adicione insumos: o cálculo de custo e margem aparecerá aqui ao vivo.
+                </p>
+              </div>
             }
           </mat-card-content>
         </mat-card>
