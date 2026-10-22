@@ -1,0 +1,152 @@
+<div class="page">
+  <div class="page-header">
+    <h1 class="page-title">Ingredientes</h1>
+    <div class="header-actions">
+      <button mat-stroked-button color="primary" type="button" (click)="openReplenish()">
+        <mat-icon>add_shopping_cart</mat-icon>
+        Dar entrada / Repor
+      </button>
+      <button mat-flat-button color="primary" type="button" (click)="openForm()">
+        <mat-icon>add</mat-icon>
+        Novo ingrediente
+      </button>
+    </div>
+  </div>
+
+  <div class="filter-row">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-field">
+      <mat-label>Buscar ingrediente</mat-label>
+      <input
+        matInput
+        [formControl]="searchControl"
+        placeholder="Digite o nome…"
+        autocomplete="off"
+      />
+      <mat-icon matPrefix>search</mat-icon>
+    </mat-form-field>
+    <span class="hint-text">{{ filtered().length }} de {{ total() }} nesta página</span>
+  </div>
+
+  @if (loading()) {
+    <div class="loading">
+      <mat-spinner diameter="40" />
+    </div>
+  } @else if (filtered().length === 0) {
+    <div class="empty-state">
+      <mat-icon>shopping_basket</mat-icon>
+      <p class="empty-title">Nenhum ingrediente encontrado</p>
+      <p>
+        @if (search()) {
+          Ajuste a busca ou cadastre um novo insumo.
+        } @else {
+          Cadastre o primeiro ingrediente da sua pizzaria.
+        }
+      </p>
+      <div class="empty-actions">
+        <button mat-flat-button color="primary" type="button" (click)="openForm()">
+          <mat-icon>add</mat-icon>
+          Novo ingrediente
+        </button>
+      </div>
+    </div>
+  } @else {
+    <div class="table-wrap">
+      <table mat-table [dataSource]="filtered()" class="full-width">
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef>Nome</th>
+          <td mat-cell *matCellDef="let row">
+            <strong>{{ row.name }}</strong>
+            @if (row.currentStock < 0) {
+              <span class="cell-secondary stock-danger">
+                <mat-icon class="inline-icon">error_outline</mat-icon> Estoque negativo (baixa sem reposição)
+              </span>
+            } @else if (stockClass(row)) {
+              <span class="cell-secondary stock-low">
+                <mat-icon class="inline-icon">warning</mat-icon> Estoque abaixo do mínimo
+              </span>
+            }
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="purchase">
+          <th mat-header-cell *matHeaderCellDef>Embalagem base (custo)</th>
+          <td mat-cell *matCellDef="let row">
+            {{ row.purchaseQuantity }} {{ row.purchaseUnit }}
+            <span class="cell-secondary">{{ row.purchasePrice | brl }}</span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="unitCost">
+          <th mat-header-cell *matHeaderCellDef>Custo/unidade</th>
+          <td mat-cell *matCellDef="let row">{{ row.unitCost | brl }} / {{ row.purchaseUnit }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="loss">
+          <th mat-header-cell *matHeaderCellDef>Perda</th>
+          <td mat-cell *matCellDef="let row">{{ row.lossPercentage | pct }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="stock">
+          <th mat-header-cell *matHeaderCellDef>Estoque atual</th>
+          <td mat-cell *matCellDef="let row" [class.stock-low]="stockClass(row)">
+            <span class="stock-qty" [class.is-negative]="row.currentStock < 0">
+              {{ row.currentStock }} {{ row.purchaseUnit }}
+            </span>
+            <span class="cell-secondary">mín. {{ row.minimumStock }} {{ row.purchaseUnit }}</span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef aria-label="Ações"> </th>
+          <td mat-cell *matCellDef="let row">
+            <div class="cell-actions">
+              <button
+                mat-icon-button
+                type="button"
+                color="primary"
+                matTooltip="Repor estoque / Adicionar compra"
+                aria-label="Repor estoque do ingrediente"
+                (click)="openReplenish(row)"
+              >
+                <mat-icon class="action-replenish-icon">add_circle</mat-icon>
+              </button>
+              <button
+                mat-icon-button
+                type="button"
+                matTooltip="Editar cadastro base"
+                aria-label="Editar ingrediente"
+                (click)="openForm(row)"
+              >
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button
+                mat-icon-button
+                type="button"
+                matTooltip="Excluir ingrediente"
+                aria-label="Excluir ingrediente"
+                (click)="remove(row)"
+              >
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="columns"></tr>
+        <tr mat-row *matRowDef="let row; columns: columns"></tr>
+      </table>
+    </div>
+
+    @if (total() > pageSize) {
+      <mat-paginator
+        class="full-width"
+        [length]="total()"
+        [pageSize]="pageSize"
+        [pageIndex]="page() - 1"
+        [pageSizeOptions]="[pageSize]"
+        (page)="onPage($event)"
+        showFirstLastButtons
+      />
+    }
+  }
+</div>

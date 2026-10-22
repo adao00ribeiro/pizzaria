@@ -1,0 +1,165 @@
+<div class="auth-page">
+  <!-- Botão de alternância de tema no topo -->
+  <div class="auth-topbar">
+    <button
+      mat-icon-button
+      type="button"
+      class="auth-theme-btn"
+      (click)="theme.toggleTheme()"
+      [matTooltip]="theme.isDark() ? 'Alternar para tema claro' : 'Alternar para tema escuro'"
+      [attr.aria-label]="theme.isDark() ? 'Alternar para tema claro' : 'Alternar para tema escuro'"
+    >
+      <mat-icon>{{ theme.isDark() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+    </button>
+  </div>
+
+  <mat-card class="auth-card" appearance="outlined">
+    <mat-card-content>
+      <!-- Logotipo & Identidade Visual da Marca -->
+      <div class="auth-brand-section">
+        <div class="auth-logo-wrapper">
+          <img
+            [src]="theme.isDark() ? 'images/posachio-logo-dark.png' : 'images/posachio-logo-trans.png'"
+            alt="POSACHIO - Forneria Artesanal"
+            class="auth-logo-img"
+          />
+        </div>
+        <div class="auth-pill-badge">
+          <mat-icon class="pill-icon">storefront</mat-icon>
+          <span>Nova Forneria</span>
+        </div>
+        <h1 class="auth-title">Criar Conta</h1>
+        <p class="auth-subtitle">
+          Cadastre sua pizzaria e comece a precificar com margem real e inteligência.
+        </p>
+      </div>
+
+      <!-- Formulário de Registro -->
+      <form [formGroup]="form" (ngSubmit)="submit()" novalidate class="auth-form">
+        <!-- Nome Completo -->
+        <mat-form-field appearance="outline" class="full-width auth-field">
+          <mat-label>Seu nome</mat-label>
+          <mat-icon matPrefix class="field-icon">person_outline</mat-icon>
+          <input matInput formControlName="fullName" autocomplete="name" placeholder="Ex.: Lucas Rossi" />
+          @if (form.controls.fullName.hasError('required')) {
+            <mat-error>Nome obrigatório</mat-error>
+          } @else if (form.controls.fullName.hasError('minlength')) {
+            <mat-error>Informe ao menos 3 caracteres</mat-error>
+          }
+        </mat-form-field>
+
+        <!-- Nome da Pizzaria -->
+        <mat-form-field appearance="outline" class="full-width auth-field">
+          <mat-label>Nome da pizzaria / forneria</mat-label>
+          <mat-icon matPrefix class="field-icon">local_pizza</mat-icon>
+          <input matInput formControlName="pizzeriaName" placeholder="Ex.: Posachio Forneria" />
+          @if (form.controls.pizzeriaName.hasError('required')) {
+            <mat-error>Nome da pizzaria obrigatório</mat-error>
+          } @else if (form.controls.pizzeriaName.hasError('minlength')) {
+            <mat-error>Informe ao menos 2 caracteres</mat-error>
+          }
+        </mat-form-field>
+
+        <!-- E-mail -->
+        <mat-form-field appearance="outline" class="full-width auth-field">
+          <mat-label>E-mail comercial</mat-label>
+          <mat-icon matPrefix class="field-icon">mail_outline</mat-icon>
+          <input matInput type="email" formControlName="email" autocomplete="email" placeholder="contato@pizzaria.com" />
+          @if (form.controls.email.hasError('required')) {
+            <mat-error>E-mail obrigatório</mat-error>
+          } @else if (form.controls.email.hasError('email')) {
+            <mat-error>Informe um e-mail válido</mat-error>
+          }
+        </mat-form-field>
+
+        <!-- Senha -->
+        <mat-form-field appearance="outline" class="full-width auth-field">
+          <mat-label>Senha</mat-label>
+          <mat-icon matPrefix class="field-icon">lock_outline</mat-icon>
+          <input
+            matInput
+            [type]="hidePassword() ? 'password' : 'text'"
+            formControlName="password"
+            autocomplete="new-password"
+            placeholder="Mínimo 8 chars, 1 maiúscula, 1 número"
+          />
+          <button
+            mat-icon-button
+            matSuffix
+            type="button"
+            (click)="hidePassword.set(!hidePassword())"
+            [matTooltip]="hidePassword() ? 'Mostrar senha' : 'Ocultar senha'"
+            [attr.aria-label]="hidePassword() ? 'Mostrar senha' : 'Ocultar senha'"
+            class="password-visibility-btn"
+          >
+            <mat-icon>{{ hidePassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+          </button>
+          @if (form.controls.password.hasError('required')) {
+            <mat-error>Senha obrigatória</mat-error>
+          } @else if (form.controls.password.hasError('minLength')) {
+            <mat-error>A senha deve ter no mínimo 8 caracteres</mat-error>
+          } @else if (form.controls.password.hasError('uppercase')) {
+            <mat-error>A senha deve ter ao menos 1 letra maiúscula</mat-error>
+          } @else if (form.controls.password.hasError('number')) {
+            <mat-error>A senha deve ter ao menos 1 número</mat-error>
+          }
+        </mat-form-field>
+
+        <!-- Confirmar Senha -->
+        <mat-form-field appearance="outline" class="full-width auth-field">
+          <mat-label>Confirmar senha</mat-label>
+          <mat-icon matPrefix class="field-icon">check_circle_outline</mat-icon>
+          <input
+            matInput
+            [type]="hideConfirmPassword() ? 'password' : 'text'"
+            formControlName="confirmPassword"
+            autocomplete="new-password"
+          />
+          <button
+            mat-icon-button
+            matSuffix
+            type="button"
+            (click)="hideConfirmPassword.set(!hideConfirmPassword())"
+            [matTooltip]="hideConfirmPassword() ? 'Mostrar senha' : 'Ocultar senha'"
+            [attr.aria-label]="hideConfirmPassword() ? 'Mostrar senha' : 'Ocultar senha'"
+            class="password-visibility-btn"
+          >
+            <mat-icon>{{ hideConfirmPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+          </button>
+          @if (form.controls.confirmPassword.hasError('required')) {
+            <mat-error>Confirmação obrigatória</mat-error>
+          } @else if (form.controls.confirmPassword.hasError('mismatch')) {
+            <mat-error>As senhas não coincidem</mat-error>
+          }
+        </mat-form-field>
+
+        @if (loading()) {
+          <mat-progress-bar mode="indeterminate" class="full-width auth-progress" />
+        }
+
+        <!-- Botão Criar Conta -->
+        <button
+          mat-flat-button
+          color="primary"
+          class="full-width auth-submit-btn"
+          type="submit"
+          [disabled]="loading()"
+        >
+          <mat-icon>arrow_forward</mat-icon>
+          <span>Cadastrar Forneria</span>
+        </button>
+      </form>
+
+      <!-- Rodapé do Card -->
+      <div class="auth-footer">
+        <span>Já possui uma conta?</span>
+        <a routerLink="/login" class="auth-link">Faça login</a>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Assinatura no rodapé da página -->
+  <footer class="auth-page-footer">
+    <span>POSACHIO &bull; Forneria Artesanal &bull; Gestão &amp; Engenharia de Custos</span>
+  </footer>
+</div>

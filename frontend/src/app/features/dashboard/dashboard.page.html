@@ -1,0 +1,575 @@
+<div class="page dashboard-page">
+  <!-- Cabeçalho Executivo -->
+  <header class="dashboard-header">
+    <div class="header-main">
+      <div class="header-icon-box">
+        <mat-icon>insights</mat-icon>
+      </div>
+      <div class="header-text">
+        <div class="header-title-row">
+          <h1 class="header-title">Dashboard Executivo</h1>
+          <span class="live-pill" title="Métricas e indicadores consolidados">
+            <span class="pulse-dot"></span>
+            Tempo Real
+          </span>
+        </div>
+        <p class="header-subtitle">
+          Visão estratégica de rentabilidade, fichas técnicas e custos operacionais
+        </p>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <button
+        mat-flat-button
+        color="primary"
+        type="button"
+        class="refresh-btn"
+        [disabled]="loading()"
+        (click)="reload()"
+        aria-label="Atualizar dados do dashboard"
+      >
+        <mat-icon [class.spinning]="loading()">refresh</mat-icon>
+        <span>{{ loading() ? 'Atualizando...' : 'Atualizar Dados' }}</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Barra de Atalhos Rápidos -->
+  <nav class="quick-nav-bar" aria-label="Atalhos rápidos do sistema">
+    <div class="quick-nav-label">
+      <mat-icon>bolt</mat-icon>
+      <span>Acesso Rápido:</span>
+    </div>
+    <div class="quick-nav-items">
+      <a mat-button routerLink="/pedidos" class="quick-action-btn">
+        <mat-icon>add_shopping_cart</mat-icon>
+        <span>Novo Pedido</span>
+      </a>
+      <a mat-button routerLink="/producao" class="quick-action-btn">
+        <mat-icon>outdoor_grill</mat-icon>
+        <span>Fila da Produção</span>
+      </a>
+      <a mat-button routerLink="/sheets" class="quick-action-btn">
+        <mat-icon>menu_book</mat-icon>
+        <span>Fichas Técnicas</span>
+      </a>
+      <a mat-button routerLink="/lucro" class="quick-action-btn">
+        <mat-icon>trending_up</mat-icon>
+        <span>Lucro Real</span>
+      </a>
+      <a
+        mat-button
+        routerLink="/alerts"
+        class="quick-action-btn alert-action-btn"
+        [class.has-alerts]="(summary()?.openAlerts ?? 0) > 0"
+      >
+        <mat-icon>notifications_active</mat-icon>
+        <span>Alertas</span>
+        @if ((summary()?.openAlerts ?? 0) > 0) {
+          <span class="quick-nav-badge">{{ summary()?.openAlerts }}</span>
+        }
+      </a>
+    </div>
+  </nav>
+
+  @if (loading()) {
+    <div class="loading-state">
+      <mat-spinner diameter="44" strokeWidth="3" />
+      <p class="loading-text">Consolidando métricas e rentabilidade da pizzaria...</p>
+    </div>
+  } @else {
+    <!-- 1. Grid de Cards de Indicadores (KPIs) de Alto Padrão -->
+    <section class="kpi-section" aria-label="Indicadores chave de desempenho">
+      <div class="kpi-grid">
+        <!-- 1. Itens precificados -->
+        <mat-card class="kpi-card card-kpi-blue" appearance="outlined">
+          <div class="kpi-card-header">
+            <span class="kpi-label">Itens Precificados</span>
+            <div class="kpi-icon-wrap icon-blue">
+              <mat-icon>inventory_2</mat-icon>
+            </div>
+          </div>
+          <div class="kpi-card-body">
+            <div class="kpi-number">{{ summary()?.totalItems ?? 0 }}</div>
+          </div>
+          <div class="kpi-card-footer">
+            <span class="kpi-subtext">Fichas técnicas ativas no catálogo</span>
+          </div>
+        </mat-card>
+
+        <!-- 2. Itens no vermelho -->
+        <mat-card
+          class="kpi-card card-kpi-red"
+          [class.has-danger]="(summary()?.itemsInRed ?? 0) > 0"
+          appearance="outlined"
+        >
+          <div class="kpi-card-header">
+            <span class="kpi-label">Itens no Vermelho</span>
+            <div class="kpi-icon-wrap icon-red">
+              <mat-icon>error_outline</mat-icon>
+            </div>
+          </div>
+          <div class="kpi-card-body">
+            <div class="kpi-value-row">
+              <div class="kpi-number" [class.is-danger]="(summary()?.itemsInRed ?? 0) > 0">
+                {{ summary()?.itemsInRed ?? 0 }}
+              </div>
+              @if ((summary()?.itemsInRed ?? 0) === 0) {
+                <span class="status-chip chip-ok">
+                  <mat-icon>check_circle</mat-icon>
+                  Tudo sob controle
+                </span>
+              } @else {
+                <span class="status-chip chip-danger">
+                  <mat-icon>warning</mat-icon>
+                  Atenção necessária
+                </span>
+              }
+            </div>
+          </div>
+          <div class="kpi-card-footer">
+            <span class="kpi-subtext">
+              @if ((summary()?.itemsInRed ?? 0) === 0) {
+                Nenhuma pizza abaixo do custo
+              } @else {
+                Itens com margem real negativa
+              }
+            </span>
+          </div>
+        </mat-card>
+
+        <!-- 3. Custo fixo por mês -->
+        <mat-card class="kpi-card card-kpi-purple" appearance="outlined">
+          <div class="kpi-card-header">
+            <span class="kpi-label">Custo Fixo por Mês</span>
+            <div class="kpi-icon-wrap icon-purple">
+              <mat-icon>account_balance</mat-icon>
+            </div>
+          </div>
+          <div class="kpi-card-body">
+            <div class="kpi-number">{{ (summary()?.monthlyFixedCost ?? 0) | brl }}</div>
+          </div>
+          <div class="kpi-card-footer">
+            <span class="kpi-subtext">Despesas operacionais fixas</span>
+          </div>
+        </mat-card>
+
+        <!-- 4. Custo indireto por pizza -->
+        <mat-card class="kpi-card card-kpi-amber" appearance="outlined">
+          <div class="kpi-card-header">
+            <span class="kpi-label">Custo Indireto / Pizza</span>
+            <div class="kpi-icon-wrap icon-amber">
+              <mat-icon>pie_chart</mat-icon>
+            </div>
+          </div>
+          <div class="kpi-card-body">
+            <div class="kpi-number">{{ (summary()?.indirectCostPerPizza ?? 0) | brl }}</div>
+          </div>
+          <div class="kpi-card-footer">
+            <span class="kpi-subtext">Rateio médio por unidade</span>
+          </div>
+        </mat-card>
+
+        <!-- 5. Margem média -->
+        <mat-card class="kpi-card card-kpi-emerald" appearance="outlined">
+          <div class="kpi-card-header">
+            <span class="kpi-label">Margem Média</span>
+            <div class="kpi-icon-wrap icon-emerald">
+              <mat-icon>trending_up</mat-icon>
+            </div>
+          </div>
+          <div class="kpi-card-body">
+            <div class="kpi-value-row">
+              <div class="kpi-number is-emerald">
+                {{ (summary()?.averageMargin ?? 0) | pct }}
+              </div>
+              @if ((summary()?.averageMargin ?? 0) >= 40) {
+                <span class="status-chip chip-ok">
+                  <mat-icon>verified</mat-icon>
+                  Meta saudável
+                </span>
+              } @else {
+                <span class="status-chip chip-warning">
+                  <mat-icon>trending_down</mat-icon>
+                  Abaixo da meta
+                </span>
+              }
+            </div>
+          </div>
+          <div class="kpi-card-footer">
+            <span class="kpi-subtext">Média ponderada do cardápio</span>
+          </div>
+        </mat-card>
+
+        <!-- 6. Alertas abertos -->
+        <mat-card
+          class="kpi-card card-kpi-orange"
+          [class.has-danger]="(summary()?.openAlerts ?? 0) > 0"
+          appearance="outlined"
+        >
+          <div class="kpi-card-header">
+            <span class="kpi-label">Alertas Abertos</span>
+            <div class="kpi-icon-wrap icon-orange">
+              <mat-icon>notifications_active</mat-icon>
+            </div>
+          </div>
+          <div class="kpi-card-body">
+            <div class="kpi-value-row">
+              <div class="kpi-number" [class.is-orange]="(summary()?.openAlerts ?? 0) > 0">
+                {{ summary()?.openAlerts ?? 0 }}
+              </div>
+              @if ((summary()?.openAlerts ?? 0) > 0) {
+                <span class="status-chip chip-orange">
+                  <mat-icon>priority_high</mat-icon>
+                  Ação requerida
+                </span>
+              } @else {
+                <span class="status-chip chip-neutral">
+                  <mat-icon>done_all</mat-icon>
+                  Em dia
+                </span>
+              }
+            </div>
+          </div>
+          <div class="kpi-card-footer">
+            <span class="kpi-subtext">Pendências operacionais</span>
+          </div>
+        </mat-card>
+      </div>
+    </section>
+
+    <!-- 2. Rankings Lado a Lado (Maiores Lucros e Maiores Custos) -->
+    <section class="rankings-section" aria-label="Rankings de rentabilidade e custos">
+      <div class="rankings-grid">
+        <!-- Maiores Lucros -->
+        <mat-card class="executive-card ranking-card" appearance="outlined">
+          <div class="executive-card-header">
+            <div class="card-title-group">
+              <div class="section-icon-box icon-emerald-box">
+                <mat-icon>payments</mat-icon>
+              </div>
+              <div>
+                <h2 class="card-main-title">Maiores Lucros Nominais</h2>
+                <p class="card-subtitle">
+                  Pizzas com melhor retorno financeiro nominal por unidade vendida
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <mat-card-content class="ranking-content">
+            @if (profitRanking().length === 0) {
+              <div class="empty-state">
+                <mat-icon>payments</mat-icon>
+                <p class="empty-title">Sem dados para exibir</p>
+                <p>Monte fichas técnicas para calcular o ranking de rentabilidade.</p>
+              </div>
+            } @else {
+              <div class="ranking-list">
+                @for (item of profitRanking(); track item.name + item.size; let i = $index) {
+                  <div class="ranking-row">
+                    <!-- Posição / Medalha -->
+                    <div class="rank-badge-wrap">
+                      @if (i === 0) {
+                        <span class="rank-badge rank-gold" title="1º Lugar">&#9733; 1</span>
+                      } @else if (i === 1) {
+                        <span class="rank-badge rank-silver" title="2º Lugar">2</span>
+                      } @else if (i === 2) {
+                        <span class="rank-badge rank-bronze" title="3º Lugar">3</span>
+                      } @else {
+                        <span class="rank-badge rank-neutral">{{ i + 1 }}</span>
+                      }
+                    </div>
+
+                    <!-- Miniatura da Pizza -->
+                    <div class="pizza-avatar-wrap">
+                      @if (getProductImage(item.name); as imgUrl) {
+                        <img
+                          [src]="imgUrl"
+                          [alt]="item.name"
+                          class="pizza-avatar-img"
+                          loading="lazy"
+                        />
+                      } @else {
+                        <div class="pizza-avatar-fallback">
+                          <mat-icon>local_pizza</mat-icon>
+                        </div>
+                      }
+                    </div>
+
+                    <!-- Dados do Sabor e Barra Relativa -->
+                    <div class="rank-info-wrap">
+                      <div class="rank-title-line">
+                        <span class="rank-pizza-name">{{ item.name }}</span>
+                        <span class="size-pill">{{ item.size }}</span>
+                      </div>
+                      <div class="relative-bar-track" title="Proporção em relação ao maior lucro">
+                        <div
+                          class="relative-bar-fill fill-profit"
+                          [style.width.%]="(item.value / maxProfit()) * 100"
+                        ></div>
+                      </div>
+                    </div>
+
+                    <!-- Valor do Lucro -->
+                    <div class="rank-value-wrap">
+                      <span class="rank-value-main profit-value">{{ item.value | brl }}</span>
+                      <span class="rank-value-sub">lucro líquido</span>
+                    </div>
+
+                    <!-- Status da Margem -->
+                    <div class="rank-status-wrap">
+                      <pz-margin-status-chip [status]="item.marginStatus" />
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Maiores Custos -->
+        <mat-card class="executive-card ranking-card" appearance="outlined">
+          <div class="executive-card-header">
+            <div class="card-title-group">
+              <div class="section-icon-box icon-red-box">
+                <mat-icon>receipt_long</mat-icon>
+              </div>
+              <div>
+                <h2 class="card-main-title">Maiores Custos de Produção</h2>
+                <p class="card-subtitle">
+                  Pizzas com maior custo de insumos e produção (atenção ao desperdício)
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <mat-card-content class="ranking-content">
+            @if (costRanking().length === 0) {
+              <div class="empty-state">
+                <mat-icon>shopping_cart</mat-icon>
+                <p class="empty-title">Sem dados para exibir</p>
+                <p>Monte fichas técnicas para analisar o ranking de custos.</p>
+              </div>
+            } @else {
+              <div class="ranking-list">
+                @for (item of costRanking(); track item.name + item.size; let i = $index) {
+                  <div class="ranking-row">
+                    <!-- Posição / Medalha -->
+                    <div class="rank-badge-wrap">
+                      @if (i === 0) {
+                        <span class="rank-badge rank-cost-high" title="Maior custo">1</span>
+                      } @else if (i === 1) {
+                        <span class="rank-badge rank-cost-mid">2</span>
+                      } @else if (i === 2) {
+                        <span class="rank-badge rank-cost-mid">3</span>
+                      } @else {
+                        <span class="rank-badge rank-neutral">{{ i + 1 }}</span>
+                      }
+                    </div>
+
+                    <!-- Miniatura da Pizza -->
+                    <div class="pizza-avatar-wrap">
+                      @if (getProductImage(item.name); as imgUrl) {
+                        <img
+                          [src]="imgUrl"
+                          [alt]="item.name"
+                          class="pizza-avatar-img"
+                          loading="lazy"
+                        />
+                      } @else {
+                        <div class="pizza-avatar-fallback">
+                          <mat-icon>local_pizza</mat-icon>
+                        </div>
+                      }
+                    </div>
+
+                    <!-- Dados do Sabor e Barra Relativa -->
+                    <div class="rank-info-wrap">
+                      <div class="rank-title-line">
+                        <span class="rank-pizza-name">{{ item.name }}</span>
+                        <span class="size-pill">{{ item.size }}</span>
+                      </div>
+                      <div class="relative-bar-track" title="Proporção em relação ao maior custo">
+                        <div
+                          class="relative-bar-fill fill-cost"
+                          [style.width.%]="(item.value / maxCost()) * 100"
+                        ></div>
+                      </div>
+                    </div>
+
+                    <!-- Valor do Custo -->
+                    <div class="rank-value-wrap">
+                      <span class="rank-value-main cost-value">{{ item.value | brl }}</span>
+                      <span class="rank-value-sub">custo total</span>
+                    </div>
+
+                    <!-- Status da Margem -->
+                    <div class="rank-status-wrap">
+                      <pz-margin-status-chip [status]="item.marginStatus" />
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </section>
+
+    <!-- 3. Gráfico de Margem por Sabor -->
+    <section class="chart-section" aria-label="Gráfico de margem percentual por sabor">
+      <mat-card class="executive-card" appearance="outlined">
+        <div class="executive-card-header">
+          <div class="card-title-group">
+            <div class="section-icon-box icon-chart-box">
+              <mat-icon>bar_chart</mat-icon>
+            </div>
+            <div>
+              <h2 class="card-main-title">Margem de Lucro por Sabor (%)</h2>
+              <p class="card-subtitle">
+                Comparativo percentual de margem real estimada por pizza ativa no catálogo
+              </p>
+            </div>
+          </div>
+          <div class="chart-legend-pills">
+            <span class="legend-pill"><span class="legend-dot dot-green"></span> ≥ 40% Saudável</span>
+            <span class="legend-pill"><span class="legend-dot dot-amber"></span> 20% a 39% Mediana</span>
+            <span class="legend-pill"><span class="legend-dot dot-red"></span> &lt; 20% Crítica</span>
+          </div>
+        </div>
+
+        <mat-card-content>
+          @if (margins().length === 0) {
+            <div class="empty-state">
+              <mat-icon>bar_chart</mat-icon>
+              <p class="empty-title">Sem dados para exibir</p>
+              <p>Assim que houver fichas precificadas, o comparativo percentual aparece aqui.</p>
+            </div>
+          } @else {
+            <div class="chart-container">
+              <canvas
+                baseChart
+                [type]="chartType"
+                [data]="chartData()"
+                [options]="chartOptions"
+              ></canvas>
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+    </section>
+
+    <!-- 4. Consulta Individual / Simulador de Ficha -->
+    <section class="simulator-section" aria-label="Simulador de custos e preços por pizza">
+      <mat-card class="executive-card" appearance="outlined">
+        <div class="executive-card-header">
+          <div class="card-title-group">
+            <div class="section-icon-box icon-calc-box">
+              <mat-icon>calculate</mat-icon>
+            </div>
+            <div>
+              <h2 class="card-main-title">Simulador de Ficha Técnica Individual</h2>
+              <p class="card-subtitle">
+                Consulte o detalhamento de custos, sugestão de preço e margem de qualquer pizza
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <mat-card-content class="simulator-content">
+          <form [formGroup]="individualForm" class="simulator-form">
+            <div class="form-grid">
+              <mat-form-field appearance="outline" class="form-field-item">
+                <mat-label>Sabor da Pizza</mat-label>
+                <mat-icon matPrefix class="field-prefix-icon">local_pizza</mat-icon>
+                <mat-select formControlName="productId" placeholder="Selecione a pizza">
+                  @for (p of pizzaProducts(); track p.id) {
+                    <mat-option [value]="p.id">{{ p.name }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="form-field-item">
+                <mat-label>Tamanho</mat-label>
+                <mat-icon matPrefix class="field-prefix-icon">straighten</mat-icon>
+                <mat-select formControlName="sizeId" placeholder="Selecione o tamanho">
+                  @for (s of sizes(); track s.id) {
+                    <mat-option [value]="s.id">{{ s.name }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            </div>
+          </form>
+
+          @if (individualLoading()) {
+            <div class="simulator-loading">
+              <mat-spinner diameter="36" strokeWidth="3" />
+              <span>Calculando composição de custos...</span>
+            </div>
+          } @else {
+            @if (individual(); as detail) {
+              <div class="simulator-results-wrap">
+                <pz-result-cards
+                  [directCost]="detail.result.directCost"
+                  [indirectCost]="detail.result.indirectCost"
+                  [totalCost]="detail.result.directCost + detail.result.indirectCost"
+                  [price]="detail.result.suggestedPrice"
+                  [profit]="detail.result.estimatedProfit"
+                  [margin]="detail.result.marginRealPercentage"
+                  [status]="detail.result.status"
+                />
+
+                <div class="breakdown-box">
+                  <div class="breakdown-header">
+                    <mat-icon>receipt</mat-icon>
+                    <h3>Composição Detalhada dos Insumos</h3>
+                  </div>
+
+                  @if (detail.items.length === 0) {
+                    <p class="hint-empty">
+                      Esta ficha ainda não tem ingredientes ou preparos lançados.
+                    </p>
+                  } @else {
+                    <div class="breakdown-list">
+                      @for (item of detail.items; track item.id) {
+                        <div class="breakdown-row">
+                          <div class="breakdown-desc">
+                            <span class="breakdown-dot"></span>
+                            <span class="item-name">{{ item.description }}</span>
+                            <span class="item-qty-badge">{{ item.quantity }} {{ item.unit }}</span>
+                          </div>
+                          <div class="breakdown-cost">{{ item.itemCost | brl }}</div>
+                        </div>
+                      }
+                      <div class="breakdown-row breakdown-addon">
+                        <div class="breakdown-desc">
+                          <mat-icon class="addon-icon">inventory</mat-icon>
+                          <span class="item-name">Embalagem</span>
+                        </div>
+                        <div class="breakdown-cost">{{ detail.packagingCost | brl }}</div>
+                      </div>
+                      <div class="breakdown-row breakdown-addon">
+                        <div class="breakdown-desc">
+                          <mat-icon class="addon-icon">percent</mat-icon>
+                          <span class="item-name">Perda Estimada</span>
+                        </div>
+                        <div class="breakdown-cost">{{ detail.lossPercentage | pct }}</div>
+                      </div>
+                    </div>
+                  }
+                </div>
+              </div>
+            } @else {
+              <div class="simulator-placeholder">
+                <mat-icon>touch_app</mat-icon>
+                <p>Selecione um sabor e um tamanho acima para simular a formação de preço e custos.</p>
+              </div>
+            }
+          }
+        </mat-card-content>
+      </mat-card>
+    </section>
+  }
+</div>

@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/PizzariaLucrativa.Api/PizzariaLucrativa.Api.csproj" />
+    <Project Path="src/PizzariaLucrativa.Application/PizzariaLucrativa.Application.csproj" />
+    <Project Path="src/PizzariaLucrativa.Domain/PizzariaLucrativa.Domain.csproj" />
+    <Project Path="src/PizzariaLucrativa.Infrastructure/PizzariaLucrativa.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/PizzariaLucrativa.Api.Tests/PizzariaLucrativa.Api.Tests.csproj" />
+    <Project Path="tests/PizzariaLucrativa.Domain.Tests/PizzariaLucrativa.Domain.Tests.csproj" />
+  </Folder>
+</Solution>

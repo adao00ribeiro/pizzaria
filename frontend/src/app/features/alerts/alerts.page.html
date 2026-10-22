@@ -1,0 +1,112 @@
+<div class="page">
+  <div class="page-header">
+    <h1 class="page-title">Alertas</h1>
+  </div>
+
+  <p class="hint-text" style="margin-top: -8px;">
+    Itens com margem abaixo do alvo e ingredientes abaixo do estoque mínimo.
+  </p>
+
+  <div class="filter-row">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Status</mat-label>
+      <mat-select [value]="statusControl.value" (selectionChange)="statusControl.setValue($event.value)">
+        <mat-option value="">Todos</mat-option>
+        <mat-option value="Open">Abertos</mat-option>
+        <mat-option value="Resolved">Resolvidos</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Tipo</mat-label>
+      <mat-select [value]="typeControl.value" (selectionChange)="typeControl.setValue($event.value)">
+        <mat-option value="">Todos</mat-option>
+        <mat-option value="MarginBelow">Margem abaixo do alvo</mat-option>
+        <mat-option value="LowStock">Estoque abaixo do mínimo</mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
+
+  @if (loading()) {
+    <div class="loading">
+      <mat-spinner diameter="40" />
+    </div>
+  } @else if (alerts().length === 0) {
+    <div class="empty-state">
+      <mat-icon>notification_important</mat-icon>
+      <p class="empty-title">Nenhum alerta</p>
+      <p>
+        @if (statusControl.value || typeControl.value) {
+          Nenhum alerta corresponde aos filtros selecionados.
+        } @else {
+          Tudo certo: nenhum item está fora da margem ou do estoque mínimo.
+        }
+      </p>
+    </div>
+  } @else {
+    <div class="table-wrap">
+      <table mat-table [dataSource]="alerts()" class="full-width">
+        <ng-container matColumnDef="type">
+          <th mat-header-cell *matHeaderCellDef>Tipo</th>
+          <td mat-cell *matCellDef="let a">
+            <mat-chip [class.pz-chip-warn]="a.status === 'Open'" [class.pz-chip-ok]="a.status === 'Resolved'">
+              <mat-icon matChipAvatar>{{ a.type === 'MarginBelow' ? 'trending_down' : 'inventory' }}</mat-icon>
+              {{ typeLabel(a.type) }}
+            </mat-chip>
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="message">
+          <th mat-header-cell *matHeaderCellDef>Mensagem</th>
+          <td mat-cell *matCellDef="let a">{{ a.message }}</td>
+        </ng-container>
+        <ng-container matColumnDef="createdAt">
+          <th mat-header-cell *matHeaderCellDef>Data</th>
+          <td mat-cell *matCellDef="let a">{{ a.createdAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+        </ng-container>
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>Status</th>
+          <td mat-cell *matCellDef="let a">{{ statusLabel(a.status) }}</td>
+        </ng-container>
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef aria-label="Ações"> </th>
+          <td mat-cell *matCellDef="let a" class="cell-actions">
+            @if (a.status === 'Open') {
+              @if (a.type === 'LowStock') {
+                <button
+                  mat-flat-button
+                  type="button"
+                  color="primary"
+                  (click)="openReplenish(a)"
+                >
+                  <mat-icon>add_shopping_cart</mat-icon>
+                  Repor estoque
+                </button>
+              }
+              <button
+                mat-stroked-button
+                type="button"
+                [disabled]="resolvingId() === a.id"
+                (click)="resolve(a)"
+              >
+                <mat-icon>check</mat-icon>
+                Marcar resolvido
+              </button>
+            }
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="columns"></tr>
+        <tr mat-row *matRowDef="let row; columns: columns"></tr>
+      </table>
+    </div>
+
+    <mat-paginator
+      [length]="total()"
+      [pageIndex]="page() - 1"
+      [pageSize]="pageSize"
+      [pageSizeOptions]="[10, 20, 50]"
+      (page)="onPage($event)"
+      aria-label="Paginação de alertas"
+    />
+  }
+</div>

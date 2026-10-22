@@ -1,0 +1,25 @@
+.stepper {
+  min-width: 0;
+}
+
+.step-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  padding-top: 8px;
+}
+
+.step-form .hint-text,
+.step-form .error-text {
+  grid-column: 1 / -1;
+}
+
+.item-row-inner {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.items-list {
+  padding-top: 8px;
+}

@@ -1,0 +1,25 @@
+import { LOCALE_ID, provideZoneChangeDetection } from '@angular/core';
+import { provideRouter } from '@angular/router';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
+import { registerLocaleData } from '@angular/common';
+import localePt from '@angular/common/locales/pt';
+import localePtExtra from '@angular/common/locales/extra/pt';
+
+import { routes } from './app.routes';
+import { jwtInterceptor } from './core/interceptors/jwt.interceptor';
+import { errorInterceptor } from './core/interceptors/error.interceptor';
+
+registerLocaleData(localePt, 'pt-BR', localePtExtra);
+
+export const appConfig: ApplicationConfig = {
+  providers: [
+    { provide: LOCALE_ID, useValue: 'pt-BR' },
+    provideZoneChangeDetection({ eventCoalescing: true }),
+    provideRouter(routes),
+    provideHttpClient(withInterceptors([jwtInterceptor, errorInterceptor])),
+    provideAnimationsAsync(),
+  ],
+};
+
+import { ApplicationConfig } from '@angular/core';

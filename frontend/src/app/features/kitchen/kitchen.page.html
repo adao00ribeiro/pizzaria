@@ -1,0 +1,601 @@
+<div class="kitchen-page">
+  <!-- Cabeçalho do painel da produção -->
+  <header class="kitchen-header">
+    <div class="kitchen-title-group">
+      <div class="kitchen-heading">
+        <mat-icon class="heading-icon">outdoor_grill</mat-icon>
+        <h1 class="page-title">Fila da Produção</h1>
+        <span class="total-pill">{{ counts().total }} ativo(s)</span>
+      </div>
+      <span class="sync-status" [class.is-paused]="tabHidden()">
+        <span class="sync-dot" [class.is-syncing]="syncing()"></span>
+        {{ updatedAgoLabel() }}
+      </span>
+    </div>
+
+    <div class="kitchen-controls">
+      <button
+        mat-stroked-button
+        type="button"
+        class="sound-toggle-btn"
+        [class.is-active]="sound.enabled()"
+        (click)="sound.toggle()"
+        [matTooltip]="
+          sound.enabled()
+            ? 'Aviso sonoro de pedido novo ligado (toque para silenciar)'
+            : 'Aviso sonoro desligado (toque para ativar)'
+        "
+      >
+        <mat-icon>{{ sound.enabled() ? 'volume_up' : 'volume_off' }}</mat-icon>
+        <span>{{ sound.enabled() ? 'Som ligado' : 'Som desligado' }}</span>
+      </button>
+
+      <button
+        mat-stroked-button
+        type="button"
+        (click)="refreshNow()"
+        [disabled]="syncing()"
+        aria-label="Atualizar fila agora"
+      >
+        <mat-icon>refresh</mat-icon>
+        <span>Atualizar</span>
+      </button>
+    </div>
+  </header>
+
+  @if (initialLoading()) {
+    <div class="loading">
+      <mat-progress-spinner mode="indeterminate" diameter="44" />
+    </div>
+  } @else {
+    <!-- Kanban em 3 colunas: Recebido → Em preparo → Pronto -->
+    <div class="kanban-board">
+      <!-- ==================== COLUNA 1: RECEBIDO ==================== -->
+      <section class="kanban-column col-received" aria-label="Pedidos recebidos">
+        <div class="column-header">
+          <div class="column-title">
+            <mat-icon>inbox</mat-icon>
+            <h2>Recebido</h2>
+          </div>
+          <span class="column-count">{{ counts().received }}</span>
+        </div>
+
+        <div class="column-cards">
+          @if (receivedOrders().length === 0) {
+            <div class="column-empty">
+              <mat-icon>check_circle_outline</mat-icon>
+              <p>Nenhum pedido aguardando início</p>
+            </div>
+          } @else {
+            @for (order of receivedOrders(); track order.id) {
+              <article
+                class="kitchen-card"
+                [class.is-late]="order.late || order.elapsedMinutes >= 20"
+              >
+                <div class="card-top">
+                  <span class="order-code">#{{ order.code }}</span>
+
+                  <span class="type-chip" [attr.data-type]="order.type">
+                    <mat-icon>{{ orderTypeIcon(order.type) }}</mat-icon>
+                    {{ orderTypeLabel(order.type) }}
+                  </span>
+
+                  <span class="spacer"></span>
+
+                  <span
+                    class="timer-badge"
+                    [attr.data-severity]="timerColor(order)"
+                    [matTooltip]="
+                      order.late
+                        ? 'Pedido atrasado (20 min ou mais)'
+                        : 'Tempo decorrido desde o recebimento'
+                    "
+                  >
+                    <mat-icon>schedule</mat-icon>
+                    <strong>{{ order.elapsedMinutes }} min</strong>
+                    @if (order.late || order.elapsedMinutes >= 20) {
+                      <span class="late-tag">ATRASADO</span>
+                    }
+                  </span>
+                </div>
+
+                @if (order.customerName) {
+                  <div class="customer-line">
+                    <mat-icon>person</mat-icon>
+                    <span>{{ order.customerName }}</span>
+                  </div>
+                }
+
+                @if (order.notes) {
+                  <div class="order-note-banner">
+                    <mat-icon>priority_high</mat-icon>
+                    <span>{{ order.notes }}</span>
+                  </div>
+                }
+
+                <ul class="order-items-list">
+                  @for (item of order.items; track $index) {
+                    <li class="order-item-block">
+                      <div class="item-header">
+                        <strong>{{ itemTitle(item) }}</strong>
+                        @if (item.flavors.length > 1 && !item.comboName) {
+                          <span class="mixed-badge">{{ item.flavors.length }} sabores</span>
+                        }
+                      </div>
+
+                      <ul class="flavor-list">
+                        @for (flavor of item.flavors; track $index) {
+                          <li class="flavor-line">
+                            <div class="flavor-thumb-avatar">
+                              <div class="flavor-thumb-fallback">
+                                <mat-icon>local_pizza</mat-icon>
+                              </div>
+                              @if (flavor.imageUrl) {
+                                <img
+                                  [src]="flavor.imageUrl"
+                                  [alt]="flavor.productName"
+                                  class="flavor-thumb-img"
+                                  (error)="onFlavorImgError($event)"
+                                />
+                              }
+                            </div>
+                            <div class="flavor-text-group">
+                              @if (flavorFractionLabel(flavor, item.flavors.length); as frac) {
+                                <span class="fraction-pill">{{ frac }}</span>
+                              }
+                              <span class="flavor-name">{{ flavor.productName }}</span>
+                            </div>
+                          </li>
+                        }
+                      </ul>
+
+                      @if (item.notes) {
+                        <div class="item-note">Obs.: {{ item.notes }}</div>
+                      }
+                    </li>
+                  }
+                </ul>
+
+                @if (hasRecipe(order)) {
+                  <button
+                    type="button"
+                    class="recipe-toggle-btn"
+                    (click)="toggleRecipe(order.id)"
+                    [attr.aria-expanded]="isExpanded(order.id)"
+                  >
+                    <mat-icon>menu_book</mat-icon>
+                    <span>
+                      {{ isExpanded(order.id) ? 'Ocultar receita' : 'Ver receita resumida' }}
+                    </span>
+                    <span class="spacer"></span>
+                    <mat-icon>
+                      {{ isExpanded(order.id) ? 'expand_less' : 'expand_more' }}
+                    </mat-icon>
+                  </button>
+
+                  @if (isExpanded(order.id)) {
+                    <div class="recipe-panel" aria-label="Ficha técnica resumida">
+                      @for (item of order.items; track $index) {
+                        @for (flavor of item.flavors; track $index) {
+                          @if (flavor.recipe.length > 0) {
+                            <div class="recipe-flavor-group">
+                              <div class="recipe-flavor-title">
+                                {{ flavor.productName }}
+                                @if (item.sizeName) {
+                                  <span>({{ item.sizeName }})</span>
+                                }
+                              </div>
+                              <ul class="recipe-lines">
+                                @for (line of flavor.recipe; track $index) {
+                                  <li>
+                                    <span>{{ line.label }}</span>
+                                    <strong>{{ line.quantity }} {{ unitLabel(line.unit) }}</strong>
+                                  </li>
+                                }
+                              </ul>
+                            </div>
+                          }
+                        }
+                      }
+                    </div>
+                  }
+                }
+
+                <div class="card-actions">
+                  <button
+                    mat-flat-button
+                    color="primary"
+                    type="button"
+                    class="giant-action-btn"
+                    [disabled]="busyOrderId() === order.id"
+                    (click)="startOrder(order)"
+                  >
+                    <mat-icon>local_fire_department</mat-icon>
+                    <span>Iniciar preparo</span>
+                  </button>
+
+                  <button
+                    mat-icon-button
+                    type="button"
+                    class="cancel-btn"
+                    matTooltip="Cancelar pedido"
+                    aria-label="Cancelar pedido"
+                    [disabled]="busyOrderId() === order.id"
+                    (click)="confirmCancel(order)"
+                  >
+                    <mat-icon>close</mat-icon>
+                  </button>
+                </div>
+              </article>
+            }
+          }
+        </div>
+      </section>
+
+      <!-- ==================== COLUNA 2: EM PREPARO ==================== -->
+      <section class="kanban-column col-prep" aria-label="Pedidos em preparo">
+        <div class="column-header">
+          <div class="column-title">
+            <mat-icon>local_fire_department</mat-icon>
+            <h2>Em preparo</h2>
+          </div>
+          <span class="column-count">{{ counts().inPreparation }}</span>
+        </div>
+
+        <div class="column-cards">
+          @if (inPreparationOrders().length === 0) {
+            <div class="column-empty">
+              <mat-icon>outdoor_grill</mat-icon>
+              <p>Nenhum pedido no forno agora</p>
+            </div>
+          } @else {
+            @for (order of inPreparationOrders(); track order.id) {
+              <article
+                class="kitchen-card"
+                [class.is-late]="order.late || order.elapsedMinutes >= 20"
+              >
+                <div class="card-top">
+                  <span class="order-code">#{{ order.code }}</span>
+
+                  <span class="type-chip" [attr.data-type]="order.type">
+                    <mat-icon>{{ orderTypeIcon(order.type) }}</mat-icon>
+                    {{ orderTypeLabel(order.type) }}
+                  </span>
+
+                  <span class="spacer"></span>
+
+                  <span
+                    class="timer-badge"
+                    [attr.data-severity]="timerColor(order)"
+                    [matTooltip]="
+                      order.late
+                        ? 'Pedido atrasado (20 min ou mais)'
+                        : 'Tempo decorrido em preparo'
+                    "
+                  >
+                    <mat-icon>schedule</mat-icon>
+                    <strong>{{ order.elapsedMinutes }} min</strong>
+                    @if (order.late || order.elapsedMinutes >= 20) {
+                      <span class="late-tag">ATRASADO</span>
+                    }
+                  </span>
+                </div>
+
+                @if (order.customerName) {
+                  <div class="customer-line">
+                    <mat-icon>person</mat-icon>
+                    <span>{{ order.customerName }}</span>
+                  </div>
+                }
+
+                @if (order.notes) {
+                  <div class="order-note-banner">
+                    <mat-icon>priority_high</mat-icon>
+                    <span>{{ order.notes }}</span>
+                  </div>
+                }
+
+                <ul class="order-items-list">
+                  @for (item of order.items; track $index) {
+                    <li class="order-item-block">
+                      <div class="item-header">
+                        <strong>{{ itemTitle(item) }}</strong>
+                        @if (item.flavors.length > 1 && !item.comboName) {
+                          <span class="mixed-badge">{{ item.flavors.length }} sabores</span>
+                        }
+                      </div>
+
+                      <ul class="flavor-list">
+                        @for (flavor of item.flavors; track $index) {
+                          <li class="flavor-line">
+                            <div class="flavor-thumb-avatar">
+                              <div class="flavor-thumb-fallback">
+                                <mat-icon>local_pizza</mat-icon>
+                              </div>
+                              @if (flavor.imageUrl) {
+                                <img
+                                  [src]="flavor.imageUrl"
+                                  [alt]="flavor.productName"
+                                  class="flavor-thumb-img"
+                                  (error)="onFlavorImgError($event)"
+                                />
+                              }
+                            </div>
+                            <div class="flavor-text-group">
+                              @if (flavorFractionLabel(flavor, item.flavors.length); as frac) {
+                                <span class="fraction-pill">{{ frac }}</span>
+                              }
+                              <span class="flavor-name">{{ flavor.productName }}</span>
+                            </div>
+                          </li>
+                        }
+                      </ul>
+
+                      @if (item.notes) {
+                        <div class="item-note">Obs.: {{ item.notes }}</div>
+                      }
+                    </li>
+                  }
+                </ul>
+
+                @if (hasRecipe(order)) {
+                  <button
+                    type="button"
+                    class="recipe-toggle-btn"
+                    (click)="toggleRecipe(order.id)"
+                    [attr.aria-expanded]="isExpanded(order.id)"
+                  >
+                    <mat-icon>menu_book</mat-icon>
+                    <span>
+                      {{ isExpanded(order.id) ? 'Ocultar receita' : 'Ver receita resumida' }}
+                    </span>
+                    <span class="spacer"></span>
+                    <mat-icon>
+                      {{ isExpanded(order.id) ? 'expand_less' : 'expand_more' }}
+                    </mat-icon>
+                  </button>
+
+                  @if (isExpanded(order.id)) {
+                    <div class="recipe-panel" aria-label="Ficha técnica resumida">
+                      @for (item of order.items; track $index) {
+                        @for (flavor of item.flavors; track $index) {
+                          @if (flavor.recipe.length > 0) {
+                            <div class="recipe-flavor-group">
+                              <div class="recipe-flavor-title">
+                                {{ flavor.productName }}
+                                @if (item.sizeName) {
+                                  <span>({{ item.sizeName }})</span>
+                                }
+                              </div>
+                              <ul class="recipe-lines">
+                                @for (line of flavor.recipe; track $index) {
+                                  <li>
+                                    <span>{{ line.label }}</span>
+                                    <strong>{{ line.quantity }} {{ unitLabel(line.unit) }}</strong>
+                                  </li>
+                                }
+                              </ul>
+                            </div>
+                          }
+                        }
+                      }
+                    </div>
+                  }
+                }
+
+                <div class="card-actions">
+                  <button
+                    mat-flat-button
+                    type="button"
+                    class="giant-action-btn btn-ready"
+                    [disabled]="busyOrderId() === order.id"
+                    (click)="markReady(order)"
+                  >
+                    <mat-icon>check_circle</mat-icon>
+                    <span>Marcar pronto</span>
+                  </button>
+
+                  <button
+                    mat-icon-button
+                    type="button"
+                    class="cancel-btn"
+                    matTooltip="Cancelar pedido"
+                    aria-label="Cancelar pedido"
+                    [disabled]="busyOrderId() === order.id"
+                    (click)="confirmCancel(order)"
+                  >
+                    <mat-icon>close</mat-icon>
+                  </button>
+                </div>
+              </article>
+            }
+          }
+        </div>
+      </section>
+
+      <!-- ==================== COLUNA 3: PRONTO ==================== -->
+      <section class="kanban-column col-ready" aria-label="Pedidos prontos">
+        <div class="column-header">
+          <div class="column-title">
+            <mat-icon>Task_alt</mat-icon>
+            <h2>Pronto</h2>
+          </div>
+          <span class="column-count">{{ counts().ready }}</span>
+        </div>
+
+        <div class="column-cards">
+          @if (readyOrders().length === 0) {
+            <div class="column-empty">
+              <mat-icon>room_service</mat-icon>
+              <p>Nenhum pedido aguardando retirada/entrega</p>
+            </div>
+          } @else {
+            @for (order of readyOrders(); track order.id) {
+              <article
+                class="kitchen-card"
+                [class.is-late]="order.late || order.elapsedMinutes >= 20"
+              >
+                <div class="card-top">
+                  <span class="order-code">#{{ order.code }}</span>
+
+                  <span class="type-chip" [attr.data-type]="order.type">
+                    <mat-icon>{{ orderTypeIcon(order.type) }}</mat-icon>
+                    {{ orderTypeLabel(order.type) }}
+                  </span>
+
+                  <span class="spacer"></span>
+
+                  <span
+                    class="timer-badge"
+                    [attr.data-severity]="timerColor(order)"
+                  >
+                    <mat-icon>schedule</mat-icon>
+                    <strong>{{ order.elapsedMinutes }} min</strong>
+                    @if (order.late || order.elapsedMinutes >= 20) {
+                      <span class="late-tag">ATRASADO</span>
+                    }
+                  </span>
+                </div>
+
+                @if (order.customerName) {
+                  <div class="customer-line">
+                    <mat-icon>person</mat-icon>
+                    <span>{{ order.customerName }}</span>
+                  </div>
+                }
+
+                @if (order.notes) {
+                  <div class="order-note-banner">
+                    <mat-icon>priority_high</mat-icon>
+                    <span>{{ order.notes }}</span>
+                  </div>
+                }
+
+                <ul class="order-items-list">
+                  @for (item of order.items; track $index) {
+                    <li class="order-item-block">
+                      <div class="item-header">
+                        <strong>{{ itemTitle(item) }}</strong>
+                        @if (item.flavors.length > 1 && !item.comboName) {
+                          <span class="mixed-badge">{{ item.flavors.length }} sabores</span>
+                        }
+                      </div>
+
+                      <ul class="flavor-list">
+                        @for (flavor of item.flavors; track $index) {
+                          <li class="flavor-line">
+                            <div class="flavor-thumb-avatar">
+                              <div class="flavor-thumb-fallback">
+                                <mat-icon>local_pizza</mat-icon>
+                              </div>
+                              @if (flavor.imageUrl) {
+                                <img
+                                  [src]="flavor.imageUrl"
+                                  [alt]="flavor.productName"
+                                  class="flavor-thumb-img"
+                                  (error)="onFlavorImgError($event)"
+                                />
+                              }
+                            </div>
+                            <div class="flavor-text-group">
+                              @if (flavorFractionLabel(flavor, item.flavors.length); as frac) {
+                                <span class="fraction-pill">{{ frac }}</span>
+                              }
+                              <span class="flavor-name">{{ flavor.productName }}</span>
+                            </div>
+                          </li>
+                        }
+                      </ul>
+
+                      @if (item.notes) {
+                        <div class="item-note">Obs.: {{ item.notes }}</div>
+                      }
+                    </li>
+                  }
+                </ul>
+
+                @if (hasRecipe(order)) {
+                  <button
+                    type="button"
+                    class="recipe-toggle-btn"
+                    (click)="toggleRecipe(order.id)"
+                    [attr.aria-expanded]="isExpanded(order.id)"
+                  >
+                    <mat-icon>menu_book</mat-icon>
+                    <span>
+                      {{ isExpanded(order.id) ? 'Ocultar receita' : 'Ver receita resumida' }}
+                    </span>
+                    <span class="spacer"></span>
+                    <mat-icon>
+                      {{ isExpanded(order.id) ? 'expand_less' : 'expand_more' }}
+                    </mat-icon>
+                  </button>
+
+                  @if (isExpanded(order.id)) {
+                    <div class="recipe-panel" aria-label="Ficha técnica resumida">
+                      @for (item of order.items; track $index) {
+                        @for (flavor of item.flavors; track $index) {
+                          @if (flavor.recipe.length > 0) {
+                            <div class="recipe-flavor-group">
+                              <div class="recipe-flavor-title">
+                                {{ flavor.productName }}
+                                @if (item.sizeName) {
+                                  <span>({{ item.sizeName }})</span>
+                                }
+                              </div>
+                              <ul class="recipe-lines">
+                                @for (line of flavor.recipe; track $index) {
+                                  <li>
+                                    <span>{{ line.label }}</span>
+                                    <strong>{{ line.quantity }} {{ unitLabel(line.unit) }}</strong>
+                                  </li>
+                                }
+                              </ul>
+                            </div>
+                          }
+                        }
+                      }
+                    </div>
+                  }
+                }
+
+                <div class="card-actions">
+                  <button
+                    mat-flat-button
+                    type="button"
+                    class="giant-action-btn btn-finish"
+                    [disabled]="busyOrderId() === order.id"
+                    (click)="finishOrder(order)"
+                  >
+                    <mat-icon>
+                      {{ order.type === 'Delivery' ? 'delivery_dining' : 'done_all' }}
+                    </mat-icon>
+                    <span>
+                      {{
+                        order.type === 'Delivery'
+                          ? 'Saiu para entrega'
+                          : 'Entregar / Concluir'
+                      }}
+                    </span>
+                  </button>
+
+                  <button
+                    mat-icon-button
+                    type="button"
+                    class="cancel-btn"
+                    matTooltip="Cancelar pedido (estorna estoque)"
+                    aria-label="Cancelar pedido"
+                    [disabled]="busyOrderId() === order.id"
+                    (click)="confirmCancel(order)"
+                  >
+                    <mat-icon>close</mat-icon>
+                  </button>
+                </div>
+              </article>
+            }
+          }
+        </div>
+      </section>
+    </div>
+  }
+</div>

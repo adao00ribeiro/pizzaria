@@ -1,0 +1,129 @@
+<div class="page">
+  <div class="page-header">
+    <h1 class="page-title">Taxas e margem padrão</h1>
+  </div>
+
+  <p class="hint-text" style="margin-top: -8px;">
+    Estas taxas entram na formação do preço sugerido de todas as fichas, mistas e combos.
+  </p>
+
+  @if (loading()) {
+    <div class="loading">
+      <mat-spinner diameter="40" />
+    </div>
+  } @else {
+    <mat-card class="section-card">
+      <mat-card-content>
+        <h2 class="card-title">Cardápio público</h2>
+        <p class="hint-text" style="margin-top: -4px;">
+          O link abaixo é o endereço do cardápio online dos seus clientes (site público).
+        </p>
+        <form [formGroup]="tenantForm" (ngSubmit)="saveTenant()" novalidate>
+          <div class="form-row">
+            <mat-form-field appearance="outline">
+              <mat-label>Nome fantasia</mat-label>
+              <input matInput formControlName="name" />
+              @if (tenantForm.controls.name.hasError('required')) {
+                <mat-error>Informe o nome da pizzaria</mat-error>
+              }
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Slug do cardápio</mat-label>
+              <input matInput formControlName="slug" placeholder="minha-pizzaria" autocomplete="off" />
+              <mat-hint>3 a 40 caracteres: minúsculas, números e hífen.</mat-hint>
+              @if (tenantForm.controls.slug.hasError('pattern')) {
+                <mat-error>Use apenas minúsculas, números e hífen (sem hífen nas pontas)</mat-error>
+              } @else if (tenantForm.controls.slug.hasError('minlength') || tenantForm.controls.slug.hasError('maxlength')) {
+                <mat-error>O slug deve ter entre 3 e 40 caracteres</mat-error>
+              }
+            </mat-form-field>
+          </div>
+
+          @if (tenantForm.controls.slug.value) {
+            <div class="live-calc">
+              <span>Link do cardápio:</span>
+              <strong>/menu/{{ tenantForm.controls.slug.value }}</strong>
+              <button mat-icon-button type="button" aria-label="Copiar link" (click)="copyLink()">
+                <mat-icon>content_copy</mat-icon>
+              </button>
+            </div>
+          }
+
+          <div class="form-actions">
+            <button mat-flat-button color="primary" type="submit" [disabled]="savingSlug()">
+              <mat-icon>save</mat-icon>
+              Salvar dados
+            </button>
+          </div>
+        </form>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="section-card">
+      <mat-card-content>
+        <form [formGroup]="form" (ngSubmit)="save()" novalidate>
+          <div class="form-row">
+            <mat-form-field appearance="outline">
+              <mat-label>Taxa de cartão (%)</mat-label>
+              <input matInput type="number" formControlName="cardFeePercentage" min="0" max="100" step="0.01" />
+              @if (form.controls.cardFeePercentage.hasError('required')) {
+                <mat-error>Informe a taxa de cartão (use 0 se não houver)</mat-error>
+              } @else if (form.controls.cardFeePercentage.hasError('min') || form.controls.cardFeePercentage.hasError('max')) {
+                <mat-error>Informe um valor entre 0 e 100</mat-error>
+              }
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Taxa de delivery (%)</mat-label>
+              <input matInput type="number" formControlName="deliveryFeePercentage" min="0" max="100" step="0.01" />
+              @if (form.controls.deliveryFeePercentage.hasError('min') || form.controls.deliveryFeePercentage.hasError('max')) {
+                <mat-error>Informe um valor entre 0 e 100</mat-error>
+              }
+            </mat-form-field>
+          </div>
+
+          <div class="form-row">
+            <mat-form-field appearance="outline">
+              <mat-label>Valor fixo de entrega</mat-label>
+              <input matInput pzMoney formControlName="deliveryFixedValue" />
+              <mat-hint>Custo fixo somado ao preço de entregas</mat-hint>
+              @if (form.controls.deliveryFixedValue.hasError('min')) {
+                <mat-error>Não pode ser negativo</mat-error>
+              }
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Margem padrão desejada (%)</mat-label>
+              <input matInput type="number" formControlName="defaultMarginPercentage" min="0" max="100" step="0.1" />
+              <mat-hint>Usada como alvo quando a ficha não define margem própria</mat-hint>
+              @if (form.controls.defaultMarginPercentage.hasError('required')) {
+                <mat-error>Informe a margem padrão</mat-error>
+              } @else if (form.controls.defaultMarginPercentage.hasError('min') || form.controls.defaultMarginPercentage.hasError('max')) {
+                <mat-error>Informe um valor entre 0 e 100</mat-error>
+              }
+            </mat-form-field>
+          </div>
+
+          <div class="form-row">
+            <mat-form-field appearance="outline">
+              <mat-label>Perda global (%)</mat-label>
+              <input matInput type="number" formControlName="lossPercentageGlobal" min="0" max="100" step="0.1" />
+              <mat-hint>Perda aplicada a todos os itens que não definem perda própria</mat-hint>
+              @if (form.controls.lossPercentageGlobal.hasError('min') || form.controls.lossPercentageGlobal.hasError('max')) {
+                <mat-error>Informe um valor entre 0 e 100</mat-error>
+              }
+            </mat-form-field>
+          </div>
+
+          <div class="form-actions">
+            <button mat-button type="button" (click)="load()">Descartar alterações</button>
+            <button mat-flat-button color="primary" type="submit" [disabled]="saving()">
+              <mat-icon>save</mat-icon>
+              Salvar taxas
+            </button>
+          </div>
+        </form>
+      </mat-card-content>
+    </mat-card>
+  }
+</div>

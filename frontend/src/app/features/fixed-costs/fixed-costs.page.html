@@ -1,0 +1,89 @@
+<div class="page">
+  <div class="page-header">
+    <h1 class="page-title">Custos fixos</h1>
+    <button mat-flat-button color="primary" type="button" (click)="openForm()">
+      <mat-icon>add</mat-icon>
+      Novo custo fixo
+    </button>
+  </div>
+
+  <p class="hint-text" style="margin-top: -8px;">
+    Aluguel, energia, equipe e outros gastos mensais entram no custo indireto de cada pizza,
+    rateados por pizza ou por % do faturamento.
+  </p>
+
+  @if (loading()) {
+    <div class="loading">
+      <mat-spinner diameter="40" />
+    </div>
+  } @else if (items().length === 0) {
+    <div class="empty-state">
+      <mat-icon>payments</mat-icon>
+      <p class="empty-title">Nenhum custo fixo cadastrado</p>
+      <p>Sem os custos fixos, sua precificação não mostra o custo real de operação.</p>
+      <button mat-stroked-button color="primary" type="button" (click)="openForm()">
+        <mat-icon>add</mat-icon>
+        Novo custo fixo
+      </button>
+    </div>
+  } @else {
+    <div class="table-wrap">
+      <table mat-table [dataSource]="items()" class="full-width">
+        <ng-container matColumnDef="description">
+          <th mat-header-cell *matHeaderCellDef>Descrição</th>
+          <td mat-cell *matCellDef="let row"><strong>{{ row.description }}</strong></td>
+        </ng-container>
+
+        <ng-container matColumnDef="allocation">
+          <th mat-header-cell *matHeaderCellDef>Rateio</th>
+          <td mat-cell *matCellDef="let row">
+            {{ allocationLabel(row.allocationType) }}
+            <span class="cell-secondary">
+              @if (row.allocationType === 'PerPizza') {
+                {{ row.expectedPizzasPerMonth ?? 0 }} pizzas/mês
+              } @else {
+                faturamento de {{ row.expectedMonthlyRevenue | brl }}
+              }
+            </span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="monthlyValue">
+          <th mat-header-cell *matHeaderCellDef>Valor mensal</th>
+          <td mat-cell *matCellDef="let row">{{ row.monthlyValue | brl }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef aria-label="Ações"> </th>
+          <td mat-cell *matCellDef="let row">
+            <div class="cell-actions">
+              <button mat-icon-button type="button" aria-label="Editar custo fixo" (click)="openForm(row)">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button mat-icon-button type="button" aria-label="Excluir custo fixo" (click)="remove(row)">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="columns"></tr>
+        <tr mat-row *matRowDef="let row; columns: columns"></tr>
+      </table>
+    </div>
+
+    <p class="hint-text">Total desta página: {{ monthlyTotal() | brl }} por mês.</p>
+
+    @if (total() > pageSize) {
+      <mat-paginator
+        class="full-width"
+        [length]="total()"
+        [pageSize]="pageSize"
+        [pageIndex]="page() - 1"
+        [pageSizeOptions]="[pageSize]"
+        (page)="onPage($event)"
+        showFirstLastButtons
+      />
+    }
+  }
+</div>

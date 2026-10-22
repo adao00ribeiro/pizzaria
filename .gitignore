@@ -1,0 +1,113 @@
+# ==============================================================================
+# Git Ignore - Pizzaria Lucrativa (Multi-Tenant SaaS)
+# .NET 8 / EF Core 8 + Angular 18 + Docker
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# .NET / Visual Studio / Rider / C#
+# ------------------------------------------------------------------------------
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+*.user
+*.userosscache
+*.suo
+*.userprefs
+*.sln.docstates
+.vs/
+.idea/
+*.DotSettings.user
+
+# Build and Publish Output
+[Aa]pp_data/
+[Pp]ublish/
+publish/
+publish_output/
+*.publishproj
+
+# Test Results & Code Coverage
+TestResults/
+[Tt]est[Rr]esult*/
+*.trx
+*.coverage
+*.coveragexml
+coverage/
+
+# SQLite & Local Databases
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+*.sqlite-shm
+*.sqlite-wal
+backend/src/PizzariaLucrativa.Api/*.db*
+
+# AppSettings & Secrets (Environment-specific overrides)
+appsettings.*.local.json
+appsettings.Local.json
+*.secrets.json
+
+# Roslyn & Rider caches
+.fleet/
+.ionide/
+.csharpier/
+
+# ------------------------------------------------------------------------------
+# Node.js / Angular / NPM
+# ------------------------------------------------------------------------------
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Angular build outputs & caches
+frontend/dist/
+frontend/tmp/
+frontend/out-tsc/
+frontend/.angular/
+.angular/
+dist/
+tmp/
+out-tsc/
+.sass-cache/
+
+# Cypress / Playwright / Karma
+cypress/videos/
+cypress/screenshots/
+
+# ------------------------------------------------------------------------------
+# Docker & Containers
+# ------------------------------------------------------------------------------
+.docker/
+docker-compose.override.yml
+
+# ------------------------------------------------------------------------------
+# Operating System & Editors
+# ------------------------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+[Dd]esktop.ini
+
+# VS Code (Allow team settings if desired, ignore local cache & state)
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.history/
+*.swp
+*.swo
+*~
+
+# Misc
+*.bak
+*.tmp

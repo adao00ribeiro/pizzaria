@@ -1,0 +1,224 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Lucro real por período</h1>
+      <p class="hint-text" style="margin: -4px 0 0;">
+        Consolidação financeira baseada exclusivamente em pedidos concluídos e baixas reais de estoque.
+      </p>
+    </div>
+
+    <div class="header-actions">
+      <mat-button-toggle-group
+        [value]="preset()"
+        (change)="selectPreset($event.value)"
+        aria-label="Período"
+      >
+        <mat-button-toggle value="today">Hoje</mat-button-toggle>
+        <mat-button-toggle value="7d">Últimos 7 dias</mat-button-toggle>
+        <mat-button-toggle value="30d">Últimos 30 dias</mat-button-toggle>
+        <mat-button-toggle value="custom">Personalizado</mat-button-toggle>
+      </mat-button-toggle-group>
+    </div>
+  </div>
+
+  @if (preset() === 'custom') {
+    <mat-card class="section-card">
+      <mat-card-content>
+        <div class="pz-filter-bar">
+          <mat-form-field appearance="outline">
+            <mat-label>De (AAAA-MM-DD)</mat-label>
+            <input matInput type="date" [formControl]="fromCtrl" />
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Até (AAAA-MM-DD)</mat-label>
+            <input matInput type="date" [formControl]="toCtrl" />
+          </mat-form-field>
+          <button mat-flat-button color="primary" type="button" (click)="reload()">
+            <mat-icon>filter_alt</mat-icon> Consultar período
+          </button>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  }
+
+  @if (loading()) {
+    <div class="loading">
+      <mat-spinner diameter="40" />
+    </div>
+  } @else {
+    @if (report(); as r) {
+      @if (r.hasCostDivergence) {
+        <div class="pz-cancel-banner" style="margin-bottom: 16px;">
+          <strong>Alerta de auditoria de estoque:</strong>
+          Há divergência de {{ r.costDivergenceAmount | brl }} entre o snapshot dos itens vendidos
+          ({{ r.ingredientCost | brl }}) e as baixas líquidas de estoque ({{ r.stockOutCost | brl }}).
+        </div>
+      }
+
+      <!-- 6 Cards de KPI -->
+      <div class="kpi-grid">
+        <mat-card class="kpi-card">
+          <span class="kpi-label">Faturamento bruto</span>
+          <strong class="kpi-value">{{ r.revenue | brl }}</strong>
+          <span class="hint-text">{{ r.completedOrdersCount }} concluídos ({{ r.cancelledOrdersCount }} cancelados)</span>
+        </mat-card>
+
+        <mat-card class="kpi-card">
+          <span class="kpi-label">Custo real de insumos</span>
+          <strong class="kpi-value">{{ r.ingredientCost | brl }}</strong>
+          <span class="hint-text">Baixa estoque: {{ r.stockOutCost | brl }}</span>
+        </mat-card>
+
+        <mat-card class="kpi-card">
+          <span class="kpi-label">Taxa estimada cartão (P8)</span>
+          <strong class="kpi-value">{{ r.estimatedCardFee | brl }}</strong>
+          <span class="hint-text">Aplicada a pagamentos em cartão</span>
+        </mat-card>
+
+        <mat-card class="kpi-card">
+          <span class="kpi-label">Lucro bruto real</span>
+          <strong class="kpi-value">{{ r.grossProfit | brl }}</strong>
+          <span class="hint-text">Receita − (Insumos + Taxa cartão)</span>
+        </mat-card>
+
+        <mat-card class="kpi-card">
+          <span class="kpi-label">Margem bruta real</span>
+          <strong class="kpi-value">{{ r.grossMarginPercentage | pct }}</strong>
+          <span class="hint-text">Sobre o faturamento realizado</span>
+        </mat-card>
+
+        <mat-card class="kpi-card">
+          <span class="kpi-label">Ticket médio</span>
+          <strong class="kpi-value">{{ r.averageTicket | brl }}</strong>
+          <span class="hint-text">Por pedido concluído</span>
+        </mat-card>
+      </div>
+
+      <!-- Card separado: Resultado após rateio de custos fixos (P9) -->
+      <mat-card class="section-card">
+        <mat-card-content>
+          <h2 class="card-title">Resultado líquido após rateio de custos fixos (P9)</h2>
+          <p class="hint-text" style="margin-top: -4px;">
+            O rateio proporcional considera a soma dos custos fixos mensais cadastrados
+            ({{ r.monthlyFixedCostTotal | brl }}/mês ÷ 30 dias × dias do período).
+          </p>
+          <div class="kpi-grid" style="margin-top: 12px;">
+            <div class="pz-detail-box">
+              <div class="hint-text">Lucro bruto operacional</div>
+              <strong>{{ r.grossProfit | brl }}</strong>
+            </div>
+            <div class="pz-detail-box">
+              <div class="hint-text">Rateio proporcional de custos fixos</div>
+              <strong>- {{ r.proportionalFixedCost | brl }}</strong>
+            </div>
+            <div class="pz-detail-box">
+              <div class="hint-text">Resultado líquido estimado</div>
+              <strong
+                class="net-result-value"
+                [class.is-positive]="r.netResultAfterFixedCosts >= 0"
+                [class.is-negative]="r.netResultAfterFixedCosts < 0"
+              >
+                {{ r.netResultAfterFixedCosts | brl }}
+              </strong>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Gráfico Diário -->
+      <mat-card class="section-card">
+        <mat-card-content>
+          <h2 class="card-title">Evolução diária (Faturamento × Custo × Lucro)</h2>
+          <div style="height: 280px;">
+            <canvas baseChart [type]="chartType" [data]="chartData()" [options]="chartOptions"></canvas>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Ranking por Produto e Mix por Canal -->
+      <div class="pz-two-cols">
+        <mat-card class="section-card">
+          <mat-card-content>
+            <h2 class="card-title">Lucro por produto / sabor vendido</h2>
+            @if (byProduct().length === 0) {
+              <p class="hint-text">Nenhuma venda concluída no período.</p>
+            } @else {
+              <div class="table-responsive">
+                <table mat-table [dataSource]="byProduct()">
+                  <ng-container matColumnDef="productName">
+                    <th mat-header-cell *matHeaderCellDef>Produto</th>
+                    <td mat-cell *matCellDef="let row"><strong>{{ row.productName }}</strong></td>
+                  </ng-container>
+                  <ng-container matColumnDef="quantitySold">
+                    <th mat-header-cell *matHeaderCellDef>Qtd.</th>
+                    <td mat-cell *matCellDef="let row">{{ row.quantitySold }}</td>
+                  </ng-container>
+                  <ng-container matColumnDef="revenue">
+                    <th mat-header-cell *matHeaderCellDef>Receita</th>
+                    <td mat-cell *matCellDef="let row">{{ row.revenue | brl }}</td>
+                  </ng-container>
+                  <ng-container matColumnDef="cost">
+                    <th mat-header-cell *matHeaderCellDef>Custo</th>
+                    <td mat-cell *matCellDef="let row">{{ row.cost | brl }}</td>
+                  </ng-container>
+                  <ng-container matColumnDef="grossProfit">
+                    <th mat-header-cell *matHeaderCellDef>Lucro</th>
+                    <td mat-cell *matCellDef="let row"><strong>{{ row.grossProfit | brl }}</strong></td>
+                  </ng-container>
+                  <ng-container matColumnDef="marginPercentage">
+                    <th mat-header-cell *matHeaderCellDef>Margem</th>
+                    <td mat-cell *matCellDef="let row">{{ row.marginPercentage | pct }}</td>
+                  </ng-container>
+
+                  <tr mat-header-row *matHeaderRowDef="productColumns"></tr>
+                  <tr mat-row *matRowDef="let row; columns: productColumns"></tr>
+                </table>
+              </div>
+            }
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="section-card">
+          <mat-card-content>
+            <h2 class="card-title">Participação por canal</h2>
+            <div class="table-responsive">
+              <table mat-table [dataSource]="byChannel()">
+                <ng-container matColumnDef="channelLabel">
+                  <th mat-header-cell *matHeaderCellDef>Canal</th>
+                  <td mat-cell *matCellDef="let row"><strong>{{ row.channelLabel }}</strong></td>
+                </ng-container>
+                <ng-container matColumnDef="ordersCount">
+                  <th mat-header-cell *matHeaderCellDef>Pedidos</th>
+                  <td mat-cell *matCellDef="let row">{{ row.ordersCount }}</td>
+                </ng-container>
+                <ng-container matColumnDef="revenue">
+                  <th mat-header-cell *matHeaderCellDef>Receita</th>
+                  <td mat-cell *matCellDef="let row">{{ row.revenue | brl }}</td>
+                </ng-container>
+                <ng-container matColumnDef="cost">
+                  <th mat-header-cell *matHeaderCellDef>Custo</th>
+                  <td mat-cell *matCellDef="let row">{{ row.cost | brl }}</td>
+                </ng-container>
+                <ng-container matColumnDef="grossProfit">
+                  <th mat-header-cell *matHeaderCellDef>Lucro</th>
+                  <td mat-cell *matCellDef="let row"><strong>{{ row.grossProfit | brl }}</strong></td>
+                </ng-container>
+                <ng-container matColumnDef="marginPercentage">
+                  <th mat-header-cell *matHeaderCellDef>Margem</th>
+                  <td mat-cell *matCellDef="let row">{{ row.marginPercentage | pct }}</td>
+                </ng-container>
+                <ng-container matColumnDef="share">
+                  <th mat-header-cell *matHeaderCellDef>Share</th>
+                  <td mat-cell *matCellDef="let row">{{ row.revenueSharePercentage | pct }}</td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="channelColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: channelColumns"></tr>
+              </table>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    }
+  }
+</div>

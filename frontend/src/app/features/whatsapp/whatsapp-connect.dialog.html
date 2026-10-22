@@ -1,0 +1,504 @@
+<div class="dialog-container">
+  <!-- Cabeçalho do Diálogo -->
+  <header class="dialog-header">
+    <div class="header-left">
+      <div class="wa-icon-badge">
+        <mat-icon>phone_iphone</mat-icon>
+      </div>
+      <div>
+        <h2 class="dialog-title">Conectar WhatsApp da Pizzaria</h2>
+        <p class="dialog-subtitle">
+          Gerencie a integração com WhatsApp Web, instâncias de automação e envio direto
+        </p>
+      </div>
+    </div>
+    <button mat-icon-button type="button" mat-dialog-close class="close-btn" matTooltip="Fechar">
+      <mat-icon>close</mat-icon>
+    </button>
+  </header>
+
+  <!-- Conteúdo Principal em Abas -->
+  <mat-dialog-content class="dialog-content">
+    <mat-tab-group
+      animationDuration="150ms"
+      [selectedIndex]="selectedTabIndex()"
+      (selectedIndexChange)="selectedTabIndex.set($event)"
+      mat-stretch-tabs="false"
+      class="custom-tabs"
+    >
+      <!-- ================= ABA 1: CONEXÃO VIA QR CODE ================= -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon class="tab-icon">qr_code_scanner</mat-icon>
+          <span>Conexão via QR Code</span>
+        </ng-template>
+
+        <div class="tab-pane-content">
+          <!-- Instruções de 4 passos -->
+          <div class="steps-card">
+            <h4 class="steps-title">
+              <mat-icon class="info-icon">phonelink_ring</mat-icon>
+              Como conectar o WhatsApp da empresa em 4 passos:
+            </h4>
+            <div class="steps-grid">
+              <div class="step-item">
+                <span class="step-number">1</span>
+                <span class="step-text">Abra o WhatsApp no <strong>celular da pizzaria</strong></span>
+              </div>
+              <div class="step-item">
+                <span class="step-number">2</span>
+                <span class="step-text">Toque em <strong>Menu (⋮)</strong> ou <strong>Ajustes</strong> &gt; <strong>Aparelhos Conectados</strong></span>
+              </div>
+              <div class="step-item">
+                <span class="step-number">3</span>
+                <span class="step-text">Toque no botão verde <strong>Conectar um aparelho</strong></span>
+              </div>
+              <div class="step-item">
+                <span class="step-number">4</span>
+                <span class="step-text">Aponte a câmera do celular para o <strong>QR Code abaixo</strong></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Grade: QR Code + Configuração do Número -->
+          <div class="connect-grid">
+            <!-- Box do QR Code -->
+            <div class="qr-box-container">
+              <div class="qr-frame" [class.syncing]="loadingQr() || refreshingQr() || isConnecting()" [class.connected]="isConnected()">
+                @if (isConnected()) {
+                  <div class="qr-connected-card">
+                    <div class="connected-icon-wrapper">
+                      <mat-icon class="huge-check">check_circle</mat-icon>
+                    </div>
+                    <h3 class="connected-title">WhatsApp Conectado!</h3>
+                    <p class="connected-phone">{{ companyPhone() || '(44) 99924-6859' }}</p>
+                    <span class="connected-badge-ok">Aparelho pareado com sucesso</span>
+                    <span class="connected-hint">Pronto para receber mensagens e enviar pedidos pelo sistema.</span>
+                  </div>
+                } @else if (realQrCode()) {
+                  <img [src]="realQrCode()" alt="QR Code WhatsApp Real" class="qr-real-img" />
+                } @else if (loadingQr()) {
+                  <div class="qr-loading">
+                    <mat-spinner diameter="48" />
+                    <span>Gerando QR Code oficial...</span>
+                  </div>
+                } @else {
+                  <div class="qr-error">
+                    <mat-icon>error_outline</mat-icon>
+                    <span>Não foi possível carregar o QR Code.</span>
+                    <button mat-stroked-button type="button" (click)="loadQr()">Tentar novamente</button>
+                  </div>
+                }
+
+                <!-- Barra Laser de Varredura / Animação de Scanner -->
+                @if (!isConnected()) {
+                  <div class="laser-scanner"></div>
+                }
+              </div>
+
+              <!-- Status da Instância -->
+              <div class="status-indicator">
+                @if (isConnected()) {
+                  <span class="status-badge connected">
+                    <span class="pulse-dot-green"></span>
+                    Conectado • Instância Baileys/Evolution API ativa
+                  </span>
+                } @else if (isConnecting()) {
+                  <span class="status-badge connecting">
+                    <mat-icon class="spin-icon">sync</mat-icon>
+                    Conectando ao WhatsApp...
+                  </span>
+                } @else {
+                  <span class="status-badge disconnected">
+                    <span class="pulse-dot-yellow"></span>
+                    Aguardando leitura do QR Code...
+                  </span>
+                }
+              </div>
+
+              <!-- Botões de Ação do QR Code -->
+              <div class="qr-actions">
+                @if (isConnected()) {
+                  <button mat-flat-button color="warn" type="button" (click)="disconnect()">
+                    <mat-icon>power_settings_new</mat-icon>
+                    Desconectar / Trocar de celular
+                  </button>
+                  <button mat-stroked-button type="button" (click)="loadQr()">
+                    <mat-icon>refresh</mat-icon>
+                    Verificar Conexão
+                  </button>
+                } @else {
+                  <button mat-flat-button color="primary" type="button" (click)="loadQr()" [disabled]="loadingQr()">
+                    <mat-icon>refresh</mat-icon>
+                    Atualizar QR Code
+                  </button>
+                  <button mat-stroked-button type="button" (click)="simulateScan()">
+                    <mat-icon>check_circle</mat-icon>
+                    Simular Leitura do QR Code
+                  </button>
+                }
+              </div>
+            </div>
+
+            <!-- Coluna Direita: Número Oficial da Pizzaria & Informações -->
+            <div class="side-config-box">
+              <div class="config-card">
+                <h4 class="card-subtitle">
+                  <mat-icon>storefront</mat-icon>
+                  Número Oficial da Pizzaria
+                </h4>
+                <p class="card-explanation">
+                  Este é o número que os clientes verão nas notificações e no botão de contato do
+                  cardápio digital:
+                </p>
+
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Telefone WhatsApp da Empresa</mat-label>
+                  <input
+                    matInput
+                    placeholder="(11) 98765-4321"
+                    [formControl]="phoneControl"
+                  />
+                  <mat-icon matPrefix>call</mat-icon>
+                  @if (phoneControl.invalid) {
+                    <mat-error>Informe um número com DDD (mínimo 10 dígitos)</mat-error>
+                  }
+                </mat-form-field>
+
+                <button
+                  mat-flat-button
+                  color="accent"
+                  type="button"
+                  class="save-phone-btn"
+                  [disabled]="phoneControl.invalid"
+                  (click)="saveCompanyPhone()"
+                >
+                  <mat-icon>save</mat-icon>
+                  Salvar número da empresa
+                </button>
+              </div>
+
+              <!-- Card de Saúde da Conexão / Detalhes de Rede -->
+              <div class="health-card">
+                <h4 class="card-subtitle">
+                  <mat-icon>hub</mat-icon>
+                  Detalhes Técnicos da Instância
+                </h4>
+                <div class="health-item">
+                  <span class="health-label">Motor de Conexão:</span>
+                  <span class="health-value">Baileys WebSocket v6.5.0 / Evolution API</span>
+                </div>
+                <div class="health-item">
+                  <span class="health-label">Latência do Gateway:</span>
+                  <span class="health-value highlight">~38 ms (Tempo Real)</span>
+                </div>
+                <div class="health-item">
+                  <span class="health-label">Criptografia:</span>
+                  <span class="health-value">Signal Protocol E2E (Ponta a Ponta)</span>
+                </div>
+                <div class="health-item">
+                  <span class="health-label">Reconexão Automática:</span>
+                  <span class="health-value">Ativada (Heartbeat a cada 25s)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- ================= ABA 2: AUTOMAÇÃO COM I.A & WEBHOOKS ================= -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon class="tab-icon">auto_awesome</mat-icon>
+          <span>Automação com I.A &amp; Webhooks</span>
+        </ng-template>
+
+        <div class="tab-pane-content">
+          <div class="ai-banner">
+            <div class="ai-banner-icon">
+              <mat-icon>psychology</mat-icon>
+            </div>
+            <div class="ai-banner-text">
+              <h4>Como a I.A se conecta ao WhatsApp da sua pizzaria</h4>
+              <p>
+                A cada nova mensagem recebida, a API dispara um evento <code>messages.upsert</code>
+                para o endpoint seguro da Pizzaria Lucrativa. Nosso motor inteligente analisa o
+                texto em linguagem natural, identifica pizzas, bordas, adicionais e bebidas, extrai
+                o endereço de entrega e gera o pedido na esteira de produção em 1 clique!
+              </p>
+            </div>
+          </div>
+
+          <!-- Controle do Robô de Atendimento -->
+          <div class="ai-toggle-box">
+            <div class="toggle-text">
+              <strong>Robô de Atendimento e Extração com Inteligência Artificial</strong>
+              <p>
+                Interpreta mensagens de clientes automaticamente e gera sugestões de resposta em
+                tempo real.
+              </p>
+            </div>
+            <mat-slide-toggle
+              [checked]="aiActive()"
+              (change)="toggleAiAutomation()"
+              color="primary"
+            ></mat-slide-toggle>
+          </div>
+
+          <!-- Webhook URL Box -->
+          <div class="integration-item">
+            <div class="item-header">
+              <div class="item-title">
+                <mat-icon>webhook</mat-icon>
+                <span>Endpoint do Webhook (URL de Callback)</span>
+              </div>
+              <span class="event-tag">POST • messages.upsert</span>
+            </div>
+            <p class="item-desc">
+              Configure esta URL no seu servidor Evolution API ou no painel do Meta Cloud API:
+            </p>
+            <div class="copy-field">
+              <input type="text" [value]="webhookUrl()" readonly class="code-input" />
+              <button
+                mat-flat-button
+                color="primary"
+                type="button"
+                (click)="copyToClipboard(webhookUrl(), 'Webhook URL')"
+              >
+                <mat-icon>content_copy</mat-icon>
+                Copiar Webhook
+              </button>
+            </div>
+          </div>
+
+          <!-- Token de Acesso da API -->
+          <div class="integration-item">
+            <div class="item-header">
+              <div class="item-title">
+                <mat-icon>key</mat-icon>
+                <span>Token de Acesso da API (Secret Bearer Token)</span>
+              </div>
+              <span class="event-tag sec">Header Authorization</span>
+            </div>
+            <p class="item-desc">
+              Utilize esta chave secreta para autenticar chamadas externas entre a sua API do
+              WhatsApp e o sistema:
+            </p>
+            <div class="copy-field">
+              <input
+                [type]="showApiToken() ? 'text' : 'password'"
+                [value]="apiToken()"
+                readonly
+                class="code-input"
+              />
+              <button
+                mat-icon-button
+                type="button"
+                (click)="showApiToken.set(!showApiToken())"
+                matTooltip="Mostrar / Ocultar Token"
+              >
+                <mat-icon>{{ showApiToken() ? 'visibility_off' : 'visibility' }}</mat-icon>
+              </button>
+              <button
+                mat-flat-button
+                color="primary"
+                type="button"
+                (click)="copyToClipboard(apiToken(), 'Token de API')"
+              >
+                <mat-icon>content_copy</mat-icon>
+                Copiar Token
+              </button>
+              <button
+                mat-stroked-button
+                type="button"
+                (click)="regenerateToken()"
+                matTooltip="Gera uma nova chave de segurança imediatamente"
+              >
+                <mat-icon>restart_alt</mat-icon>
+                Gerar Novo
+              </button>
+            </div>
+          </div>
+
+          <!-- Provedores Compatíveis -->
+          <div class="supported-engines">
+            <span class="engines-title">Provedores e Gateways Nativamente Suportados:</span>
+            <div class="engines-list">
+              <div class="engine-pill">
+                <mat-icon>rocket_launch</mat-icon>
+                <span><strong>Evolution API</strong> (Docker / Self-Hosted)</span>
+              </div>
+              <div class="engine-pill">
+                <mat-icon>bolt</mat-icon>
+                <span><strong>WhatsApp Baileys</strong> (Instância Interna)</span>
+              </div>
+              <div class="engine-pill">
+                <mat-icon>verified</mat-icon>
+                <span><strong>Meta Cloud API</strong> (WhatsApp Business Oficial)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- ================= ABA 3: ENVIO DIRETO VIA LINK (wa.me) ================= -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon class="tab-icon">send_to_mobile</mat-icon>
+          <span>Envio Direto via Link (wa.me)</span>
+        </ng-template>
+
+        <div class="tab-pane-content">
+          <div class="wame-banner">
+            <div class="wame-icon">
+              <mat-icon>touch_app</mat-icon>
+            </div>
+            <div class="wame-text">
+              <h4>Atendimento Instantâneo com Zero Servidor (`wa.me`)</h4>
+              <p>
+                Não quer depender de servidores ou manter instâncias Docker ligadas? Cada pedido e
+                cada cliente cadastrado no Pizzaria Lucrativa conta com o botão de disparo
+                <strong>wa.me</strong>.
+              </p>
+            </div>
+          </div>
+
+          <!-- 3 Vantagens do Envio Direto -->
+          <div class="features-row">
+            <div class="feature-card">
+              <div class="feature-icon green">
+                <mat-icon>verified_user</mat-icon>
+              </div>
+              <h5>100% à Prova de Bloqueios</h5>
+              <p>
+                Utiliza a interface nativa do WhatsApp Web ou WhatsApp App no celular/tablet do
+                atendente.
+              </p>
+            </div>
+
+            <div class="feature-card">
+              <div class="feature-icon blue">
+                <mat-icon>speed</mat-icon>
+              </div>
+              <h5>Abertura em 1 Clique</h5>
+              <p>
+                O sistema preenche automaticamente o número do cliente e a mensagem personalizada do
+                pedido.
+              </p>
+            </div>
+
+            <div class="feature-card">
+              <div class="feature-icon orange">
+                <mat-icon>savings</mat-icon>
+              </div>
+              <h5>Custo Zero de Infraestrutura</h5>
+              <p>
+                Funciona imediatamente sem necessidade de VPS, chips virtuais ou mensalidades de
+                serviços terceiros.
+              </p>
+            </div>
+          </div>
+
+          <!-- Simulador Interativo de Envio wa.me -->
+          <div class="simulator-card">
+            <h4 class="card-subtitle">
+              <mat-icon>play_circle</mat-icon>
+              Testar Envio via wa.me Agora
+            </h4>
+            <p class="card-explanation">
+              Experimente como o atendente envia mensagens instantâneas para qualquer cliente:
+            </p>
+
+            <div class="simulator-form">
+              <mat-form-field appearance="outline" class="sim-phone">
+                <mat-label>Número do Cliente (com DDD)</mat-label>
+                <input matInput [formControl]="testPhoneControl" placeholder="(11) 98765-4321" />
+                <mat-icon matPrefix>phone_android</mat-icon>
+              </mat-form-field>
+
+              <div class="message-type-chips">
+                <label class="chips-label">Modelo de Mensagem:</label>
+                <div class="chips-wrap">
+                  <button
+                    type="button"
+                    class="sim-chip"
+                    [class.active]="testMessageType.value === 'order'"
+                    (click)="testMessageType.setValue('order')"
+                  >
+                    🍕 Confirmação de Pedido
+                  </button>
+                  <button
+                    type="button"
+                    class="sim-chip"
+                    [class.active]="testMessageType.value === 'menu'"
+                    (click)="testMessageType.setValue('menu')"
+                  >
+                    📖 Cardápio Digital
+                  </button>
+                  <button
+                    type="button"
+                    class="sim-chip"
+                    [class.active]="testMessageType.value === 'pix'"
+                    (click)="testMessageType.setValue('pix')"
+                  >
+                    💰 Chave Pix
+                  </button>
+                  <button
+                    type="button"
+                    class="sim-chip"
+                    [class.active]="testMessageType.value === 'delivery'"
+                    (click)="testMessageType.setValue('delivery')"
+                  >
+                    🛵 Saiu para Entrega
+                  </button>
+                </div>
+              </div>
+
+              <!-- Pré-visualização da mensagem -->
+              <div class="preview-message-box">
+                <div class="preview-header">
+                  <mat-icon>chat</mat-icon>
+                  <span>Mensagem que será aberta no WhatsApp:</span>
+                </div>
+                <div class="preview-bubble">
+                  @switch (testMessageType.value) {
+                    @case ('order') {
+                      Olá! Seu pedido #1042 na Pizzaria Lucrativa foi confirmado e já está no forno! Agradecemos a preferência! 🍕
+                    }
+                    @case ('menu') {
+                      Olá! Conheça nosso cardápio digital completo com promoções e fotos: https://pizzarialucrativa.app/menu 🍕
+                    }
+                    @case ('pix') {
+                      Olá! Segue a chave Pix da Pizzaria Lucrativa: (11) 98765-4321. Por favor, envie o comprovante após a transferência!
+                    }
+                    @case ('delivery') {
+                      Seu pedido saiu para entrega com nosso motoboy! Previsão de chegada em 15 minutos. Bom apetite! 🛵
+                    }
+                  }
+                </div>
+              </div>
+
+              <div class="sim-actions">
+                <button
+                  mat-flat-button
+                  color="primary"
+                  type="button"
+                  class="test-open-btn"
+                  (click)="testWaMeLink()"
+                >
+                  <mat-icon>open_in_new</mat-icon>
+                  Testar Abertura no WhatsApp (wa.me)
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </mat-tab>
+    </mat-tab-group>
+  </mat-dialog-content>
+
+  <!-- Rodapé do Diálogo -->
+  <mat-dialog-actions align="end" class="dialog-actions">
+    <button mat-button type="button" mat-dialog-close>Fechar</button>
+  </mat-dialog-actions>
+</div>

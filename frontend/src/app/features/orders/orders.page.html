@@ -1,0 +1,501 @@
+<div class="page pz-orders-page-container">
+  <!-- Cabeçalho -->
+  <div class="page-header">
+    <div class="title-with-badge">
+      <div class="title-icon-wrapper">
+        <mat-icon>shopping_bag</mat-icon>
+      </div>
+      <div>
+        <h1 class="page-title">Pedidos e Atendimento</h1>
+        <p class="page-subtitle">
+          Balcão, retirada, entrega e pedidos do site público em tempo real.
+        </p>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <button mat-stroked-button type="button" class="pz-btn-refresh" [disabled]="loading()" (click)="reload()">
+        <mat-icon [class.spin-anim]="loading()">refresh</mat-icon> Atualizar
+      </button>
+      <button mat-flat-button color="primary" type="button" class="pz-touch-btn pz-btn-new-order" (click)="openNewOrder()">
+        <mat-icon>add_shopping_cart</mat-icon> Novo pedido
+      </button>
+    </div>
+  </div>
+
+  <!-- Resumo do dia (Cards KPI) -->
+  @if (summary(); as s) {
+    <div class="kpi-grid pz-orders-kpi">
+      <!-- Total hoje -->
+      <mat-card
+        class="kpi-card kpi-total"
+        [class.is-active]="statusCtrl.value === ''"
+        (click)="filterByStatus('')"
+        matTooltip="Clique para ver todos os pedidos de hoje"
+      >
+        <div class="kpi-top">
+          <div class="kpi-icon-pill icon-total">
+            <mat-icon>receipt_long</mat-icon>
+          </div>
+          <span class="kpi-label">Hoje (total)</span>
+        </div>
+        <div class="kpi-body">
+          <strong class="kpi-value">{{ s.totalOrders }}</strong>
+          <span class="kpi-subtext">{{ (s.totalRevenue || 0) | brl }} faturado</span>
+        </div>
+      </mat-card>
+
+      <!-- Recebidos -->
+      <mat-card
+        class="kpi-card kpi-received"
+        [class.is-active]="statusCtrl.value === 'Received'"
+        (click)="filterByStatus('Received')"
+        matTooltip="Clique para filtrar pedidos recebidos"
+      >
+        <div class="kpi-top">
+          <div class="kpi-icon-pill icon-received">
+            <mat-icon>inbox</mat-icon>
+          </div>
+          <span class="kpi-label">Recebidos</span>
+        </div>
+        <div class="kpi-body">
+          <strong class="kpi-value">{{ s.received }}</strong>
+          <span class="kpi-subtext">Aguardando início</span>
+        </div>
+      </mat-card>
+
+      <!-- Em preparo -->
+      <mat-card
+        class="kpi-card kpi-prep"
+        [class.is-active]="statusCtrl.value === 'InPreparation'"
+        (click)="filterByStatus('InPreparation')"
+        matTooltip="Clique para filtrar pedidos em preparo"
+      >
+        <div class="kpi-top">
+          <div class="kpi-icon-pill icon-prep">
+            <mat-icon>local_fire_department</mat-icon>
+          </div>
+          <span class="kpi-label">Em preparo</span>
+        </div>
+        <div class="kpi-body">
+          <strong class="kpi-value">{{ s.inPreparation }}</strong>
+          <span class="kpi-subtext">No forno / produção</span>
+        </div>
+      </mat-card>
+
+      <!-- Prontos / Entrega -->
+      <mat-card
+        class="kpi-card kpi-ready"
+        [class.is-active]="statusCtrl.value === 'Ready' || statusCtrl.value === 'OutForDelivery'"
+        (click)="filterByStatus('Ready')"
+        matTooltip="Clique para filtrar pedidos prontos ou em rota"
+      >
+        <div class="kpi-top">
+          <div class="kpi-icon-pill icon-ready">
+            <mat-icon>moped</mat-icon>
+          </div>
+          <span class="kpi-label">Prontos / Entrega</span>
+        </div>
+        <div class="kpi-body">
+          <strong class="kpi-value">{{ readyAndDeliveryCount(s) }}</strong>
+          <span class="kpi-subtext">{{ s.ready }} prontos · {{ s.outForDelivery }} entrega</span>
+        </div>
+      </mat-card>
+
+      <!-- Concluídos -->
+      <mat-card
+        class="kpi-card kpi-completed"
+        [class.is-active]="statusCtrl.value === 'Completed'"
+        (click)="filterByStatus('Completed')"
+        matTooltip="Clique para filtrar pedidos concluídos"
+      >
+        <div class="kpi-top">
+          <div class="kpi-icon-pill icon-completed">
+            <mat-icon>check_circle</mat-icon>
+          </div>
+          <span class="kpi-label">Concluídos</span>
+        </div>
+        <div class="kpi-body">
+          <strong class="kpi-value">{{ s.completed }}</strong>
+          <span class="kpi-subtext">Finalizados com sucesso</span>
+        </div>
+      </mat-card>
+
+      <!-- Cancelados -->
+      <mat-card
+        class="kpi-card kpi-cancelled"
+        [class.is-active]="statusCtrl.value === 'Cancelled'"
+        (click)="filterByStatus('Cancelled')"
+        matTooltip="Clique para filtrar pedidos cancelados"
+      >
+        <div class="kpi-top">
+          <div class="kpi-icon-pill icon-cancelled">
+            <mat-icon>cancel</mat-icon>
+          </div>
+          <span class="kpi-label">Cancelados</span>
+        </div>
+        <div class="kpi-body">
+          <strong class="kpi-value">{{ s.cancelled }}</strong>
+          <span class="kpi-subtext">Estornados / cancelados</span>
+        </div>
+      </mat-card>
+    </div>
+  }
+
+  <!-- Filtros -->
+  <mat-card class="section-card pz-filters-card">
+    <mat-card-content>
+      <div class="pz-filter-bar">
+        <mat-form-field appearance="outline" class="filter-field-search" subscriptSizing="dynamic">
+          <mat-label>Buscar código ou cliente</mat-label>
+          <input matInput [formControl]="searchCtrl" placeholder="Ex: #001 ou Maria" (keyup.enter)="reload()" />
+          <mat-icon matPrefix>search</mat-icon>
+          @if (searchCtrl.value) {
+            <button matSuffix mat-icon-button type="button" aria-label="Limpar busca" (click)="searchCtrl.setValue(''); reload()">
+              <mat-icon>close</mat-icon>
+            </button>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-field-select" subscriptSizing="dynamic">
+          <mat-label>Status</mat-label>
+          <mat-select [formControl]="statusCtrl" (selectionChange)="reload()">
+            <mat-option value="">Todos os status</mat-option>
+            @for (st of statuses; track st) {
+              <mat-option [value]="st">
+                <span class="select-option-with-icon">
+                  <mat-icon class="option-icon">{{ statusIcon(st) }}</mat-icon>
+                  {{ statusLabels[st] }}
+                </span>
+              </mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-field-select" subscriptSizing="dynamic">
+          <mat-label>Tipo</mat-label>
+          <mat-select [formControl]="typeCtrl" (selectionChange)="reload()">
+            <mat-option value="">Todos os tipos</mat-option>
+            @for (tp of types; track tp) {
+              <mat-option [value]="tp">
+                <span class="select-option-with-icon">
+                  <mat-icon class="option-icon">{{ orderTypeIcon(tp) }}</mat-icon>
+                  {{ typeLabels[tp] }}
+                </span>
+              </mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <div class="filter-actions">
+          <button mat-flat-button color="primary" type="button" (click)="reload()">
+            <mat-icon>filter_list</mat-icon> Filtrar
+          </button>
+          <button mat-stroked-button type="button" (click)="clearFilters()">
+            <mat-icon>clear_all</mat-icon> Limpar
+          </button>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  @if (loading()) {
+    <div class="loading pz-orders-loading">
+      <mat-spinner diameter="44" />
+      <p class="loading-text">Carregando pedidos...</p>
+    </div>
+  } @else {
+    <div class="pz-orders-master-detail" [class.has-selection]="!!selectedOrder()">
+      <!-- Tabela de Pedidos -->
+      <mat-card class="section-card pz-orders-table-card">
+        <div class="table-card-top-bar">
+          <div class="table-top-info">
+            <span class="table-top-title">Lista de Pedidos</span>
+            <span class="table-top-count">{{ orders().length }} de {{ total() }} pedido(s)</span>
+          </div>
+          @if (selectedOrder()) {
+            <span class="selection-indicator">
+              <mat-icon>info</mat-icon> Detalhes abertos na lateral
+            </span>
+          }
+        </div>
+
+        <mat-card-content class="table-card-content">
+          @if (orders().length === 0) {
+            <div class="empty-state pz-empty-orders">
+              <mat-icon>receipt_long</mat-icon>
+              <p class="empty-title">Nenhum pedido encontrado</p>
+              <p class="hint-text">Tente alterar os filtros ou clique em "Novo pedido" para registrar um atendimento.</p>
+            </div>
+          } @else {
+            <div class="table-responsive">
+              <table mat-table [dataSource]="orders()" class="pz-modern-table">
+                <!-- Código -->
+                <ng-container matColumnDef="code">
+                  <th mat-header-cell *matHeaderCellDef class="th-code">Código</th>
+                  <td mat-cell *matCellDef="let row" class="td-code">
+                    <span class="order-code-badge">#{{ row.code }}</span>
+                  </td>
+                </ng-container>
+
+                <!-- Horário -->
+                <ng-container matColumnDef="placedAt">
+                  <th mat-header-cell *matHeaderCellDef class="th-time">Horário</th>
+                  <td mat-cell *matCellDef="let row" class="td-time">
+                    <span class="time-main">{{ row.placedAt | date: 'dd/MM' }}</span>
+                    <span class="time-sub">{{ row.placedAt | date: 'HH:mm' }}</span>
+                  </td>
+                </ng-container>
+
+                <!-- Tipo -->
+                <ng-container matColumnDef="type">
+                  <th mat-header-cell *matHeaderCellDef class="th-type">Tipo</th>
+                  <td mat-cell *matCellDef="let row" class="td-type">
+                    <span class="pz-type-chip type-{{ row.type.toLowerCase() }}">
+                      <mat-icon>{{ orderTypeIcon(row.type) }}</mat-icon>
+                      {{ typeLabel(row.type) }}
+                    </span>
+                  </td>
+                </ng-container>
+
+                <!-- Cliente -->
+                <ng-container matColumnDef="customer">
+                  <th mat-header-cell *matHeaderCellDef class="th-customer">Cliente</th>
+                  <td mat-cell *matCellDef="let row" class="td-customer">
+                    <div class="customer-name">{{ row.customerName || 'Balcão / Anônimo' }}</div>
+                    @if (row.customerPhone) {
+                      <div class="customer-phone">{{ row.customerPhone }}</div>
+                    }
+                  </td>
+                </ng-container>
+
+                <!-- Itens -->
+                <ng-container matColumnDef="itemsCount">
+                  <th mat-header-cell *matHeaderCellDef class="th-items">Itens</th>
+                  <td mat-cell *matCellDef="let row" class="td-items">
+                    <span class="items-badge">{{ row.itemsCount }} {{ row.itemsCount === 1 ? 'item' : 'itens' }}</span>
+                  </td>
+                </ng-container>
+
+                <!-- Total -->
+                <ng-container matColumnDef="total">
+                  <th mat-header-cell *matHeaderCellDef class="th-total">Total</th>
+                  <td mat-cell *matCellDef="let row" class="td-total">
+                    <strong class="order-total-price">{{ row.total | brl }}</strong>
+                  </td>
+                </ng-container>
+
+                <!-- Status -->
+                <ng-container matColumnDef="status">
+                  <th mat-header-cell *matHeaderCellDef class="th-status">Status</th>
+                  <td mat-cell *matCellDef="let row" class="td-status">
+                    <span class="pz-status-badge status-{{ row.status }}">
+                      <span class="status-dot"></span>
+                      {{ statusLabel(row.status) }}
+                    </span>
+                  </td>
+                </ng-container>
+
+                <!-- Ações -->
+                <ng-container matColumnDef="actions">
+                  <th mat-header-cell *matHeaderCellDef class="th-actions"></th>
+                  <td mat-cell *matCellDef="let row" class="td-actions">
+                    <button
+                      mat-stroked-button
+                      type="button"
+                      class="btn-order-detail"
+                      [class.is-selected]="selectedOrder()?.id === row.id"
+                      (click)="selectOrder(row.id); $event.stopPropagation()"
+                    >
+                      <mat-icon>visibility</mat-icon>
+                      <span>Detalhes</span>
+                    </button>
+                  </td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="columns"></tr>
+                <tr
+                  mat-row
+                  *matRowDef="let row; columns: columns"
+                  class="pz-clickable-row"
+                  [class.selected]="selectedOrder()?.id === row.id"
+                  (click)="selectOrder(row.id)"
+                ></tr>
+              </table>
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Painel Lateral de Detalhes do Pedido -->
+      @if (selectedOrder(); as ord) {
+        <mat-card class="section-card pz-order-detail-card" [class]="'border-status-' + ord.status">
+          <mat-card-content>
+            <div class="pz-detail-header">
+              <div class="detail-header-left">
+                <div class="detail-code-row">
+                  <span class="order-code-badge large">#{{ ord.code }}</span>
+                  <span class="pz-status-badge status-{{ ord.status }}">
+                    <span class="status-dot"></span>
+                    {{ statusLabels[ord.status] }}
+                  </span>
+                </div>
+                <div class="detail-meta">
+                  <span class="pz-type-chip type-{{ ord.type.toLowerCase() }}">
+                    <mat-icon>{{ orderTypeIcon(ord.type) }}</mat-icon>
+                    {{ typeLabels[ord.type] }}
+                  </span>
+                  <span class="detail-date">{{ ord.placedAt | date: 'dd/MM/yyyy HH:mm' }}</span>
+                  @if (!ord.placedByUserId) {
+                    <span class="badge-public-site">
+                      <mat-icon>language</mat-icon> Site público
+                    </span>
+                  }
+                </div>
+              </div>
+              <button mat-icon-button type="button" class="btn-close-detail" aria-label="Fechar detalhes" (click)="closeDetail()">
+                <mat-icon>close</mat-icon>
+              </button>
+            </div>
+
+            @if (ord.paymentMethod) {
+              <div class="pz-payment-info-box">
+                <mat-icon>payments</mat-icon>
+                <span>Pagamento: <strong>{{ paymentLabels[ord.paymentMethod] }}</strong></span>
+              </div>
+            }
+
+            @if (ord.customerName || ord.customerPhone || ord.deliveryAddress) {
+              <div class="pz-detail-box">
+                <div class="box-title"><mat-icon>person</mat-icon> Dados do Cliente</div>
+                @if (ord.customerName) {
+                  <div class="box-row"><strong>Nome:</strong> {{ ord.customerName }}</div>
+                }
+                @if (ord.customerPhone) {
+                  <div class="box-row"><strong>Telefone:</strong> {{ ord.customerPhone }}</div>
+                }
+                @if (ord.deliveryAddress) {
+                  <div class="box-row"><strong>Endereço de entrega:</strong> {{ ord.deliveryAddress }}</div>
+                }
+              </div>
+            }
+
+            @if (ord.cancellationReason) {
+              <div class="pz-cancel-banner">
+                <mat-icon>warning</mat-icon>
+                <div>
+                  <strong>Motivo do cancelamento:</strong>
+                  <div class="cancel-text">{{ ord.cancellationReason }}</div>
+                </div>
+              </div>
+            }
+
+            <div class="pz-section-subtitle">
+              <span>Itens ({{ ord.items.length }})</span>
+            </div>
+
+            <div class="pz-detail-items">
+              @for (it of ord.items; track it.id) {
+                <div class="pz-detail-item">
+                  <div class="item-info">
+                    <div class="item-name-row">
+                      <span class="item-qty-pill">{{ it.quantity }}x</span>
+                      <strong class="item-title">
+                        @if (it.comboName) {
+                          {{ it.comboName }}
+                        } @else if (it.sizeName) {
+                          Pizza {{ it.sizeName }}
+                        } @else {
+                          {{ it.flavors.length > 0 ? it.flavors[0].productName : 'Item' }}
+                        }
+                      </strong>
+                    </div>
+                    @if (it.flavors.length > 0 && it.sizeName) {
+                      <div class="item-flavors">
+                        @for (fl of it.flavors; track fl.productId; let last = $last) {
+                          <span class="flavor-chip">{{ fl.productName }} ({{ fl.sharePercentage }}%){{ !last ? ' + ' : '' }}</span>
+                        }
+                      </div>
+                    }
+                    @if (it.notes) {
+                      <div class="pz-item-note">
+                        <mat-icon>edit_note</mat-icon> Obs: {{ it.notes }}
+                      </div>
+                    }
+                  </div>
+                  <strong class="item-price">{{ it.total | brl }}</strong>
+                </div>
+              }
+            </div>
+
+            <div class="pz-totals-bar">
+              <div class="totals-line"><span>Subtotal:</span> <strong>{{ ord.subtotal | brl }}</strong></div>
+              @if (ord.deliveryFee > 0) {
+                <div class="totals-line"><span>Taxa de entrega:</span> <strong>{{ ord.deliveryFee | brl }}</strong></div>
+              }
+              @if (ord.discount > 0) {
+                <div class="totals-line discount"><span>Desconto:</span> <strong>- {{ ord.discount | brl }}</strong></div>
+              }
+              <div class="pz-grand-total">
+                <span>Total:</span>
+                <strong class="total-amount">{{ ord.total | brl }}</strong>
+              </div>
+            </div>
+
+            <div class="pz-detail-actions">
+              @if (nextAction(ord); as next) {
+                <button
+                  mat-flat-button
+                  color="primary"
+                  type="button"
+                  class="pz-touch-btn pz-action-next-btn"
+                  [disabled]="busyOrder()"
+                  (click)="advanceStatus(ord, next.status)"
+                >
+                  <mat-icon>{{ next.icon }}</mat-icon> {{ next.label }}
+                </button>
+              }
+
+              <a mat-stroked-button class="pz-print-btn" [routerLink]="['/pedidos', ord.id, 'ticket']">
+                <mat-icon>print</mat-icon> Imprimir comanda
+              </a>
+
+              @if (ord.status !== 'Completed' && ord.status !== 'Cancelled') {
+                <button
+                  mat-stroked-button
+                  color="warn"
+                  type="button"
+                  class="pz-cancel-order-btn"
+                  [disabled]="busyOrder()"
+                  (click)="promptCancel(ord)"
+                >
+                  <mat-icon>cancel</mat-icon> Cancelar
+                </button>
+              }
+            </div>
+
+            <div class="pz-section-subtitle" style="margin-top: 20px;">
+              <span>Linha do tempo</span>
+            </div>
+            <ul class="pz-timeline">
+              @for (h of ord.history; track h.id) {
+                <li class="timeline-step">
+                  <div class="timeline-dot"></div>
+                  <div class="timeline-content">
+                    <div class="timeline-title-row">
+                      <strong class="timeline-status">{{ statusLabels[h.toStatus] }}</strong>
+                      <span class="timeline-time">{{ h.changedAt | date: 'dd/MM HH:mm' }}</span>
+                    </div>
+                    @if (h.note) {
+                      <div class="timeline-note">{{ h.note }}</div>
+                    }
+                  </div>
+                </li>
+              }
+            </ul>
+          </mat-card-content>
+        </mat-card>
+      }
+    </div>
+  }
+</div>

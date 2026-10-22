@@ -1,0 +1,85 @@
+<div class="page">
+  <div class="page-header">
+    <h1 class="page-title">Preparos</h1>
+    <button mat-flat-button color="primary" type="button" (click)="openEditor()">
+      <mat-icon>add</mat-icon>
+      Novo preparo
+    </button>
+  </div>
+
+  <p class="hint-text" style="margin-top: -8px;">
+    Receitas base como massa, molho e frango desfiado. O custo é calculado a partir dos
+    ingredientes e preparos aninhados.
+  </p>
+
+  @if (loading()) {
+    <div class="loading">
+      <mat-spinner diameter="40" />
+    </div>
+  } @else if (items().length === 0) {
+    <div class="empty-state">
+      <mat-icon>kitchen</mat-icon>
+      <p class="empty-title">Nenhum preparo cadastrado</p>
+      <p>Monte a receita do seu molho, massa ou recheio para começar a precificar.</p>
+      <button mat-stroked-button color="primary" type="button" (click)="openEditor()">
+        <mat-icon>add</mat-icon>
+        Novo preparo
+      </button>
+    </div>
+  } @else {
+    <div class="table-wrap">
+      <table mat-table [dataSource]="items()" class="full-width">
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef>Preparo</th>
+          <td mat-cell *matCellDef="let row"><strong>{{ row.name }}</strong></td>
+        </ng-container>
+
+        <ng-container matColumnDef="yield">
+          <th mat-header-cell *matHeaderCellDef>Rendimento</th>
+          <td mat-cell *matCellDef="let row">
+            {{ row.yieldQuantity }} {{ row.yieldUnit }}
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="totalCost">
+          <th mat-header-cell *matHeaderCellDef>Custo total</th>
+          <td mat-cell *matCellDef="let row">{{ row.totalCost | brl }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="unitCost">
+          <th mat-header-cell *matHeaderCellDef>Custo por unidade</th>
+          <td mat-cell *matCellDef="let row">{{ row.unitCost | brl }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef aria-label="Ações"> </th>
+          <td mat-cell *matCellDef="let row">
+            <div class="cell-actions">
+              <button mat-icon-button type="button" aria-label="Editar preparo" (click)="openEditor(row)">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button mat-icon-button type="button" aria-label="Excluir preparo" (click)="remove(row)">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="columns"></tr>
+        <tr mat-row *matRowDef="let row; columns: columns"></tr>
+      </table>
+    </div>
+
+    @if (total() > pageSize) {
+      <mat-paginator
+        class="full-width"
+        [length]="total()"
+        [pageSize]="pageSize"
+        [pageIndex]="page() - 1"
+        [pageSizeOptions]="[pageSize]"
+        (page)="onPage($event)"
+        showFirstLastButtons
+      />
+    }
+  }
+</div>

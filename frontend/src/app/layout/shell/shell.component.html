@@ -1,0 +1,205 @@
+<mat-sidenav-container class="shell-container">
+  <mat-sidenav
+    class="pz-sidenav"
+    [mode]="wide() ? 'side' : 'over'"
+    [opened]="opened()"
+    (openedChange)="opened.set($event)"
+  >
+    <!-- Topo / Brand -->
+    <div class="sidenav-brand">
+      <div class="brand-avatar">
+        <mat-icon>local_pizza</mat-icon>
+      </div>
+      <div class="brand-info">
+        <span class="brand-title">Pizzaria Lucrativa</span>
+        <span class="brand-subtitle" [title]="tenant.name() || 'Gestão Inteligente'">
+          {{ tenant.name() || 'Gestão Inteligente' }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Navegação com Scroll Suave -->
+    <div class="sidenav-scroll-area">
+      <mat-nav-list class="pz-nav-list">
+        <!-- Seção 1: VISÃO GERAL -->
+        @if (showsManagement()) {
+          <div class="menu-section-header">VISÃO GERAL</div>
+          <a
+            mat-list-item
+            routerLink="/dashboard"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+            (click)="onNavClick()"
+            class="nav-item"
+          >
+            <mat-icon matListItemIcon>dashboard</mat-icon>
+            <span matListItemTitle>Dashboard</span>
+          </a>
+        }
+
+        <!-- Seção 2: OPERAÇÃO DIÁRIA -->
+        @if (visible(operacaoLinks).length > 0) {
+          <div class="menu-section-header">OPERAÇÃO DIÁRIA</div>
+          @for (link of visible(operacaoLinks); track link.path) {
+            <a
+              mat-list-item
+              [routerLink]="link.path"
+              routerLinkActive="active"
+              (click)="onNavClick()"
+              class="nav-item"
+            >
+              <mat-icon matListItemIcon>{{ link.icon }}</mat-icon>
+              <span matListItemTitle>{{ link.label }}</span>
+              @if (link.path === '/stock' && lowStockCount() > 0) {
+                <span
+                  matListItemMeta
+                  class="badge-pill warn"
+                  matTooltip="Itens abaixo do estoque mínimo"
+                >
+                  {{ lowStockCount() }}
+                </span>
+              }
+            </a>
+          }
+        }
+
+        <!-- Seções Administrativas (Owner) -->
+        @if (showsManagement()) {
+          <div class="menu-divider"></div>
+
+          <!-- Seção 3: CARDÁPIO & PRECIFICAÇÃO -->
+          <div class="menu-group">
+            <button
+              type="button"
+              class="menu-group-btn"
+              [class.expanded]="precificacaoOpen()"
+              (click)="toggleGroup('precificacao')"
+              aria-label="Alternar Cardápio e Precificação"
+            >
+              <mat-icon class="group-icon">menu_book</mat-icon>
+              <span class="group-label">Cardápio & Precificação</span>
+              <span class="spacer"></span>
+              <mat-icon class="chevron-icon">{{ precificacaoOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
+            </button>
+            @if (precificacaoOpen()) {
+              <div class="menu-sub-list">
+                @for (link of visible(precificacaoLinks); track link.path) {
+                  <a
+                    mat-list-item
+                    [routerLink]="link.path"
+                    [routerLinkActive]="link.active === false ? [] : 'active'"
+                    (click)="onNavClick()"
+                    class="nav-item sub-item"
+                  >
+                    <mat-icon matListItemIcon>{{ link.icon }}</mat-icon>
+                    <span matListItemTitle>{{ link.label }}</span>
+                  </a>
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Seção 4: CADASTROS & CONFIGURAÇÕES -->
+          <div class="menu-group">
+            <button
+              type="button"
+              class="menu-group-btn"
+              [class.expanded]="cadastrosOpen()"
+              (click)="toggleGroup('cadastros')"
+              aria-label="Alternar Cadastros e Configurações"
+            >
+              <mat-icon class="group-icon">tune</mat-icon>
+              <span class="group-label">Cadastros & Configurações</span>
+              <span class="spacer"></span>
+              <mat-icon class="chevron-icon">{{ cadastrosOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
+            </button>
+            @if (cadastrosOpen()) {
+              <div class="menu-sub-list">
+                @for (link of visible(cadastrosLinks); track link.path) {
+                  <a
+                    mat-list-item
+                    [routerLink]="link.path"
+                    [routerLinkActive]="link.active === false ? [] : 'active'"
+                    (click)="onNavClick()"
+                    class="nav-item sub-item"
+                  >
+                    <mat-icon matListItemIcon>{{ link.icon }}</mat-icon>
+                    <span matListItemTitle>{{ link.label }}</span>
+                  </a>
+                }
+              </div>
+            }
+          </div>
+        }
+      </mat-nav-list>
+    </div>
+  </mat-sidenav>
+
+  <!-- Conteúdo Principal e Toolbar Superior -->
+  <mat-sidenav-content class="sidenav-content">
+    <mat-toolbar class="shell-toolbar" color="primary">
+      @if (!wide()) {
+        <button mat-icon-button type="button" aria-label="Abrir menu lateral" (click)="opened.set(true)">
+          <mat-icon>menu</mat-icon>
+        </button>
+      }
+      <span class="shell-title">{{ tenant.name() || 'Pizzaria Lucrativa' }}</span>
+      <span class="spacer"></span>
+
+      <!-- Ações do Header (Alertas, Perfil do Usuário e Sair) -->
+      <div class="toolbar-actions">
+        @if (showsAlerts()) {
+          <a
+            mat-icon-button
+            routerLink="/alerts"
+            routerLinkActive="active"
+            matTooltip="Alertas operacionais"
+            aria-label="Alertas e avisos do sistema"
+            class="header-alert-btn"
+            [class.has-alerts]="alertCount() > 0"
+            [matBadge]="alertCount() > 0 ? alertCount() : null"
+            [matBadgeHidden]="alertCount() === 0"
+            matBadgeColor="accent"
+            matBadgeSize="small"
+          >
+            <mat-icon>{{ alertCount() > 0 ? 'notifications_active' : 'notifications' }}</mat-icon>
+          </a>
+        }
+
+        <button
+          mat-icon-button
+          type="button"
+          (click)="theme.toggleTheme()"
+          [matTooltip]="theme.isDark() ? 'Mudar para tema claro' : 'Mudar para tema escuro'"
+          aria-label="Alternar tema claro e escuro"
+          class="header-theme-btn"
+        >
+          <mat-icon>{{ theme.isDark() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+        </button>
+
+        @if (roleLabel()) {
+          <div class="user-chip" [matTooltip]="'Perfil ativo: ' + roleLabel()">
+            <mat-icon class="user-chip-icon">{{ roleIcon() }}</mat-icon>
+            <span class="user-chip-text">{{ roleLabel() }}</span>
+          </div>
+        }
+
+        <button
+          mat-button
+          type="button"
+          class="header-logout-btn"
+          (click)="auth.logout()"
+          matTooltip="Encerrar sessão"
+          aria-label="Sair"
+        >
+          <mat-icon>logout</mat-icon>
+          <span class="wide-only">Sair</span>
+        </button>
+      </div>
+    </mat-toolbar>
+
+    <main class="sidenav-content">
+      <router-outlet />
+    </main>
+  </mat-sidenav-content>
+</mat-sidenav-container>

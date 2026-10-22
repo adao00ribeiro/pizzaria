@@ -1,0 +1,146 @@
+<h2 mat-dialog-title>{{ editing ? 'Editar preparo' : 'Novo preparo' }}</h2>
+
+<mat-dialog-content>
+  <form [formGroup]="form" novalidate>
+    <div class="form-row-3">
+      <mat-form-field appearance="outline">
+        <mat-label>Nome do preparo</mat-label>
+        <input matInput formControlName="name" placeholder="Ex.: Massa broto" />
+        @if (form.controls.name.hasError('required')) {
+          <mat-error>Nome obrigatório</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Rendimento</mat-label>
+        <input matInput type="number" formControlName="yieldQuantity" min="0" step="any" />
+        @if (form.controls.yieldQuantity.hasError('required')) {
+          <mat-error>Rendimento obrigatório</mat-error>
+        } @else if (form.controls.yieldQuantity.hasError('min')) {
+          <mat-error>Deve ser maior que zero</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Unidade do rendimento</mat-label>
+        <mat-select formControlName="yieldUnit">
+          @for (u of units; track u) {
+            <mat-option [value]="u">{{ unitLabels[u] }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    @if (loadWarning()) {
+      <div class="live-calc" style="margin-bottom: 12px; background: #fff8e1; border-color: #ffe082;">
+        <span>
+          <mat-icon style="vertical-align: middle;">warning</mat-icon>
+          {{ loadWarning() }}
+        </span>
+      </div>
+    }
+
+    <p class="card-title">Itens da receita</p>
+
+    <div formArrayName="items">
+      @for (row of items.controls; track $index; let i = $index) {
+        <div class="item-row" [formGroupName]="i">
+          <mat-form-field appearance="outline" class="item-autocomplete">
+            <mat-label>Ingrediente ou preparo</mat-label>
+            <input
+              matInput
+              formControlName="ref"
+              [matAutocomplete]="ac"
+              placeholder="Busque por nome…"
+              (input)="setFilter(i, $any($event.target).value)"
+            />
+            <mat-autocomplete
+              #ac="matAutocomplete"
+              [displayWith]="displayOption"
+              (optionSelected)="onOptionSelected(i, $event)"
+            >
+              @for (opt of filteredOptions(i); track opt.key) {
+                <mat-option [value]="opt">{{ opt.label }}</mat-option>
+              }
+            </mat-autocomplete>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="item-qty">
+            <mat-label>Quantidade</mat-label>
+            <input matInput type="number" formControlName="quantity" min="0" step="any" />
+            @if (row.get('quantity')?.hasError('min')) {
+              <mat-error>Maior que zero</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="item-unit">
+            <mat-label>Unidade</mat-label>
+            <mat-select formControlName="unit">
+              @for (u of units; track u) {
+                <mat-option [value]="u">{{ u }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <button
+            mat-icon-button
+            type="button"
+            class="item-remove"
+            aria-label="Remover item"
+            (click)="removeItem(i)"
+          >
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+      }
+    </div>
+
+    @if (itemsHint()) {
+      <p class="error-text">{{ itemsHint() }}</p>
+    }
+
+    <button mat-stroked-button type="button" (click)="addItem()" [disabled]="!ready()">
+      <mat-icon>add</mat-icon>
+      Adicionar item
+    </button>
+
+    @if (preview(); as calc) {
+      <p class="card-title" style="margin-top: 16px;">Composição do custo (ao vivo)</p>
+      <ul class="detail-list">
+        @for (b of calc.breakdown; track b.label) {
+          <li>
+            <span class="detail-label">{{ b.label }}</span>
+            <span class="detail-value">{{ b.cost | brl }}</span>
+          </li>
+        }
+      </ul>
+    }
+
+    @if (previewError()) {
+      <p class="error-text">{{ previewError() }}</p>
+    }
+  </form>
+
+  <!-- Rodapé fixo: custo total e custo por unidade atualizando a cada digitação -->
+  <div class="sticky-total">
+    <div class="total-block">
+      Custo total
+      <strong>{{ preview()?.totalCost | brl }}</strong>
+    </div>
+    <div class="total-block">
+      Custo por {{ form.controls.yieldUnit.value }}
+      <strong>{{ preview()?.unitCost | brl }}</strong>
+    </div>
+    <span class="spacer"></span>
+    @if (calculating()) {
+      <mat-progress-bar mode="indeterminate" style="width: 140px;" />
+    }
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" mat-dialog-close>Cancelar</button>
+  <button mat-flat-button color="primary" type="button" (click)="save()">
+    {{ editing ? 'Salvar alterações' : 'Salvar preparo' }}
+  </button>
+</mat-dialog-actions>

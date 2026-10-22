@@ -1,0 +1,31 @@
+:host {
+  display: block;
+}
+
+.net-result-value {
+  font-size: 1.15rem;
+
+  &.is-positive {
+    color: #2e7d32;
+  }
+
+  &.is-negative {
+    color: #c62828;
+  }
+}
+
+:host-context(.dark-theme) {
+  .net-result-value {
+    &.is-positive {
+      color: #34d399 !important;
+    }
+
+    &.is-negative {
+      color: #f87171 !important;
+    }
+  }
+
+  strong {
+    color: var(--pz-text-main);
+  }
+}

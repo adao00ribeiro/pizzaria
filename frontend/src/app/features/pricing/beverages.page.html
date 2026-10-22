@@ -1,0 +1,105 @@
+<div class="page">
+  <div class="page-header">
+    <h1 class="page-title">Bebidas</h1>
+  </div>
+
+  <p class="hint-text" style="margin-top: -8px;">
+    O preço sugerido da bebida é o preço de compra multiplicado pelo markup. Ajuste o markup e o preço é recalculado.
+  </p>
+
+  <div class="filter-row">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-field">
+      <mat-label>Buscar bebida</mat-label>
+      <input matInput [formControl]="searchControl" placeholder="Digite o nome…" autocomplete="off" />
+      <mat-icon matPrefix>search</mat-icon>
+    </mat-form-field>
+  </div>
+
+  @if (loading()) {
+    <div class="loading">
+      <mat-spinner diameter="40" />
+    </div>
+  } @else if (filtered().length === 0) {
+    <div class="empty-state">
+      <mat-icon>local_bar</mat-icon>
+      <p class="empty-title">Nenhuma bebida encontrada</p>
+      <p>
+        @if (search()) {
+          Ajuste a busca para encontrar a bebida desejada.
+        } @else {
+          Cadastre produtos com categoria "Bebida" na tela de Produtos.
+        }
+      </p>
+      <a mat-stroked-button color="primary" routerLink="/products">
+        <mat-icon>inventory_2</mat-icon>
+        Ir para Produtos
+      </a>
+    </div>
+  } @else {
+    <div class="table-wrap">
+      <table mat-table [dataSource]="filtered()" class="full-width">
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef>Bebida</th>
+          <td mat-cell *matCellDef="let b">{{ b.name }}</td>
+        </ng-container>
+        <ng-container matColumnDef="purchasePrice">
+          <th mat-header-cell *matHeaderCellDef>Preço de compra (R$)</th>
+          <td mat-cell *matCellDef="let b">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="markup-field">
+              <input
+                matInput
+                type="number"
+                min="0"
+                step="0.01"
+                [value]="purchaseValues()[b.id]"
+                (input)="setPurchasePrice(b.id, $any($event.target).valueAsNumber)"
+                [attr.aria-label]="'Preço de compra da bebida ' + b.name"
+              />
+            </mat-form-field>
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="markupMultiplier">
+          <th mat-header-cell *matHeaderCellDef>Markup</th>
+          <td mat-cell *matCellDef="let b">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="markup-field">
+              <input
+                matInput
+                type="number"
+                min="0.01"
+                step="0.01"
+                [value]="markupValues()[b.id]"
+                (input)="setMarkup(b.id, $any($event.target).valueAsNumber)"
+                [attr.aria-label]="'Markup da bebida ' + b.name"
+              />
+            </mat-form-field>
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="suggestedPrice">
+          <th mat-header-cell *matHeaderCellDef>Preço sugerido</th>
+          <td mat-cell *matCellDef="let b">{{ b.suggestedPrice | brl }}</td>
+        </ng-container>
+        <ng-container matColumnDef="marginPercentage">
+          <th mat-header-cell *matHeaderCellDef>Margem</th>
+          <td mat-cell *matCellDef="let b">{{ b.marginPercentage | pct }}</td>
+        </ng-container>
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef aria-label="Ações"> </th>
+          <td mat-cell *matCellDef="let b" class="cell-actions">
+            <button
+              mat-icon-button
+              type="button"
+              matTooltip="Aplicar markup e recalcular"
+              [disabled]="savingId() === b.id"
+              (click)="saveMarkup(b)"
+            >
+              <mat-icon>{{ savingId() === b.id ? 'hourglass_top' : 'calculate' }}</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="columns"></tr>
+        <tr mat-row *matRowDef="let row; columns: columns"></tr>
+      </table>
+    </div>
+  }
+</div>

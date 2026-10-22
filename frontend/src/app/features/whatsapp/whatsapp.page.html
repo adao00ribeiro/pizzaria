@@ -1,0 +1,438 @@
+<div class="whatsapp-layout">
+  <!-- 1. Header Superior de Conectividade -->
+  <header class="whatsapp-topbar">
+    <div class="connection-status">
+      <div class="pulse-dot" [class.disconnected]="!isConnected()" [class.connecting]="isConnecting()"></div>
+      <div class="status-texts">
+        <span class="status-title">
+          @if (isConnected()) {
+            WhatsApp Conectado{{ companyPhone() ? ': ' + companyPhone() : '' }}
+          } @else if (isConnecting()) {
+            Conectando WhatsApp...
+          } @else {
+            WhatsApp Desconectado{{ companyPhone() ? ' (' + companyPhone() + ')' : '' }}
+          }
+        </span>
+        <span class="status-subtitle">
+          @if (isConnected()) {
+            <mat-icon class="inline-icon">wifi</mat-icon> Conexão Estável
+            <mat-icon class="inline-icon">battery_full</mat-icon> 98%
+            • Operação Normal
+          } @else if (isConnecting()) {
+            <mat-icon class="inline-icon warning">sync</mat-icon> Sincronizando com a instância...
+          } @else {
+            <mat-icon class="inline-icon danger">wifi_off</mat-icon> Instância desconectada • Clique para reconectar
+          }
+        </span>
+      </div>
+    </div>
+
+    <div class="topbar-actions">
+      @if (isConnected() && unreadCount() > 0) {
+        <span class="unread-pill">
+          <mat-icon>mark_chat_unread</mat-icon>
+          {{ unreadCount() }} conversa(s) não lida(s)
+        </span>
+      }
+      <button mat-stroked-button color="accent" type="button" class="reconnect-btn" (click)="openReconnectModal()">
+        <mat-icon>sync</mat-icon>
+        Configurar / Reconectar
+      </button>
+    </div>
+  </header>
+
+  @if (isConnected()) {
+    <!-- 2. Corpo Principal: Grid de 3 Colunas -->
+    <div class="whatsapp-body">
+    <!-- Coluna 1: Lista de Conversas -->
+    <aside class="conversations-panel">
+      <div class="panel-header">
+        <div class="panel-header-bar">
+          <span class="panel-title">Conversas</span>
+          <button
+            mat-icon-button
+            type="button"
+            class="refresh-btn"
+            [class.spinning]="loadingRealChats()"
+            [disabled]="loadingRealChats()"
+            (click)="refreshConversations()"
+            matTooltip="Atualizar conversas em tempo real"
+          >
+            <mat-icon>refresh</mat-icon>
+          </button>
+        </div>
+
+        <div class="search-box">
+          <mat-icon class="search-icon">search</mat-icon>
+          <input
+            type="text"
+            placeholder="Buscar por cliente ou telefone..."
+            [formControl]="searchInput"
+            (input)="onSearchChange()"
+          />
+          @if (searchInput.value) {
+            <button mat-icon-button type="button" class="clear-btn" (click)="searchInput.setValue(''); onSearchChange()">
+              <mat-icon>close</mat-icon>
+            </button>
+          }
+        </div>
+
+        <!-- Filtros rápidos -->
+        <div class="filter-chips">
+          <button
+            type="button"
+            class="filter-pill"
+            [class.active]="filterMode() === 'all'"
+            (click)="setFilter('all')"
+          >
+            Todas
+          </button>
+          <button
+            type="button"
+            class="filter-pill"
+            [class.active]="filterMode() === 'orders'"
+            (click)="setFilter('orders')"
+          >
+            Pedidos em Aberto
+          </button>
+          <button
+            type="button"
+            class="filter-pill"
+            [class.active]="filterMode() === 'unread'"
+            (click)="setFilter('unread')"
+          >
+            Não Lidas
+          </button>
+        </div>
+      </div>
+
+      <!-- Lista de Chats -->
+      <div class="conversations-list">
+        @if (contacts().length === 0) {
+          <div class="empty-conversations">
+            <mat-icon>chat_bubble_outline</mat-icon>
+            <span>Nenhuma conversa encontrada</span>
+          </div>
+        } @else {
+          @for (c of contacts(); track c.id) {
+            <div
+              class="conversation-item"
+              [class.active]="activeContact().id === c.id"
+              [class.has-unread]="c.unreadCount > 0"
+              (click)="selectContact(c)"
+            >
+              <div class="avatar-circle">
+                @if (c.profilePicUrl) {
+                  <img [src]="c.profilePicUrl" [alt]="c.name" class="avatar-img" />
+                } @else {
+                  {{ c.name.slice(0, 2).toUpperCase() }}
+                }
+              </div>
+              <div class="conversation-details">
+                <div class="details-row top">
+                  <span class="contact-name">{{ c.name }}</span>
+                  <span class="message-time">{{ c.lastMessageTime }}</span>
+                </div>
+                <div class="details-row bottom">
+                  <span class="preview-text" [title]="c.lastMessageText">
+                    {{ c.lastMessageText }}
+                  </span>
+                  @if (c.unreadCount > 0) {
+                    <span class="unread-badge">{{ c.unreadCount }}</span>
+                  }
+                </div>
+                @if (c.hasActiveOrder) {
+                  <div class="order-tag">
+                    <mat-icon>local_pizza</mat-icon>
+                    <span>Pedido #{{ c.activeOrderCode }} • {{ c.activeOrderStatus }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        }
+      </div>
+    </aside>
+
+    <!-- Coluna 2: Janela de Chat Ativa -->
+    <main class="chat-panel">
+      @if (activeContact(); as contact) {
+        <!-- Chat Header -->
+        <div class="chat-header">
+          <div class="contact-info">
+            <div class="avatar-circle big">
+              @if (contact.profilePicUrl) {
+                <img [src]="contact.profilePicUrl" [alt]="contact.name" class="avatar-img" />
+              } @else {
+                {{ activeContactInitials() }}
+              }
+            </div>
+            <div class="contact-meta">
+              <span class="chat-title">{{ contact.name }}</span>
+              <span class="chat-subtitle">
+                {{ contact.phone }}
+                <span class="online-indicator">• Online agora</span>
+              </span>
+            </div>
+          </div>
+
+          <div class="chat-header-actions">
+            <button
+              mat-stroked-button
+              type="button"
+              class="wa-web-btn"
+              (click)="openExternalWhatsApp()"
+              matTooltip="Abrir conversa no aplicativo oficial do WhatsApp"
+            >
+              <mat-icon>open_in_new</mat-icon>
+              WhatsApp Web
+            </button>
+          </div>
+        </div>
+
+        <!-- Barra de Ações Rápidas Integradas -->
+        <div class="quick-actions-bar">
+          <button mat-flat-button color="primary" type="button" class="qa-btn new-order-btn" (click)="openNewOrderModal()">
+            <mat-icon>point_of_sale</mat-icon>
+            Criar Pedido
+          </button>
+          <button mat-stroked-button type="button" class="qa-btn" (click)="sendQuick('menu')">
+            <mat-icon>restaurant_menu</mat-icon>
+            Enviar Cardápio
+          </button>
+          <button mat-stroked-button type="button" class="qa-btn" (click)="sendQuick('pix')">
+            <mat-icon>qr_code_2</mat-icon>
+            Enviar Pix
+          </button>
+          <button mat-stroked-button type="button" class="qa-btn" (click)="sendQuick('status')">
+            <mat-icon>delivery_dining</mat-icon>
+            Status do Pedido
+          </button>
+        </div>
+
+        <!-- Histórico de Mensagens com Balões -->
+        <div class="chat-messages-area" #chatScroll>
+          <div class="chat-date-divider">
+            <span>Hoje</span>
+          </div>
+
+          @for (m of contact.messages; track m.id) {
+            <div
+              class="message-row"
+              [class.sent]="m.sender === 'agent' || m.sender === 'ai'"
+              [class.received]="m.sender === 'customer'"
+            >
+              <div class="message-bubble" [class.ai-bubble]="m.sender === 'ai'">
+                @if (m.sender === 'ai') {
+                  <div class="bubble-tag">
+                    <mat-icon>smart_toy</mat-icon>
+                    <span>Assistente IA</span>
+                  </div>
+                }
+                <div class="bubble-text">{{ m.text }}</div>
+                <div class="bubble-footer">
+                  <span class="bubble-time">{{ m.timestamp }}</span>
+                  @if (m.sender === 'agent' || m.sender === 'ai') {
+                    <mat-icon class="double-check">done_all</mat-icon>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Rodapé de Envio -->
+        <div class="chat-footer">
+          <div class="footer-input-box">
+            <textarea
+              rows="1"
+              placeholder="Digite uma mensagem (Pressione Enter para enviar)..."
+              [formControl]="messageInput"
+              (keydown.enter)="$event.preventDefault(); sendCurrentMessage()"
+            ></textarea>
+            <button
+              mat-icon-button
+              color="primary"
+              type="button"
+              class="send-btn"
+              [disabled]="!messageInput.value.trim()"
+              (click)="sendCurrentMessage()"
+            >
+              <mat-icon>send</mat-icon>
+            </button>
+          </div>
+        </div>
+      } @else {
+        <div class="no-active-chat">
+          <mat-icon>chat</mat-icon>
+          <p>Selecione um cliente para iniciar o atendimento</p>
+        </div>
+      }
+    </main>
+
+    <!-- Coluna 3: Assistente de I.A & Automação -->
+    <aside class="ai-assistant-panel">
+      <!-- Toggle de Automação -->
+      <div class="ai-panel-header">
+        <div class="ai-title-wrap">
+          <mat-icon class="ai-sparkle-icon">auto_awesome</mat-icon>
+          <div>
+            <h3>Assistente I.A</h3>
+            <span class="ai-caption">Automação de Atendimento</span>
+          </div>
+        </div>
+        <mat-slide-toggle
+          [checked]="aiActive()"
+          (change)="toggleAi()"
+          color="primary"
+          [matTooltip]="aiActive() ? 'IA Ativa respondendo e interpretando' : 'IA Pausada'"
+        ></mat-slide-toggle>
+      </div>
+
+      <div class="ai-panel-content">
+        @if (activeContact(); as contact) {
+          <!-- Card 1: Interpretação Inteligente do Pedido -->
+          @if (contact.aiSuggestion) {
+            <div class="ai-card interpretation-card" [class.highlighted]="contact.aiSuggestion.detected">
+              <div class="card-header">
+                <mat-icon>psychology</mat-icon>
+                <strong>Interpretação do Pedido</strong>
+                <span class="confidence-badge">{{ contact.aiSuggestion.confidence }}% precisão</span>
+              </div>
+
+              <div class="card-body">
+                @if (contact.aiSuggestion.detected) {
+                  <div class="detected-badge">
+                    <mat-icon>check_circle</mat-icon>
+                    <span>Pedido detectado no chat!</span>
+                  </div>
+                  <p class="detected-summary">{{ contact.aiSuggestion.summary }}</p>
+
+                  <div class="info-row">
+                    <span class="label">Itens:</span>
+                    <span class="val">{{ contact.aiSuggestion.itemsDescription }}</span>
+                  </div>
+
+                  @if (contact.aiSuggestion.deliveryAddress) {
+                    <div class="info-row">
+                      <span class="label">Endereço:</span>
+                      <span class="val">{{ contact.aiSuggestion.deliveryAddress }}</span>
+                    </div>
+                  }
+
+                  @if (contact.aiSuggestion.estimatedTotal) {
+                    <div class="info-row">
+                      <span class="label">Estimativa:</span>
+                      <span class="val price">{{ contact.aiSuggestion.estimatedTotal | brl }}</span>
+                    </div>
+                  }
+
+                  <button
+                    mat-flat-button
+                    color="primary"
+                    type="button"
+                    class="generate-ai-order-btn"
+                    (click)="openNewOrderModal(true)"
+                  >
+                    <mat-icon>bolt</mat-icon>
+                    Gerar Pedido pela IA
+                  </button>
+                } @else {
+                  <div class="undetected-state">
+                    <mat-icon>info</mat-icon>
+                    <span>{{ contact.aiSuggestion.summary }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- Card 2: Sugestões de Resposta da IA -->
+          @if (contact.aiSuggestedReplies && contact.aiSuggestedReplies.length > 0) {
+            <div class="ai-card suggestions-card">
+              <div class="card-header">
+                <mat-icon>quickreply</mat-icon>
+                <strong>Sugestões de Resposta</strong>
+              </div>
+              <div class="card-body">
+                <p class="hint-small">Clique para enviar imediatamente ao cliente:</p>
+                <div class="replies-list">
+                  @for (reply of contact.aiSuggestedReplies; track $index) {
+                    <button
+                      mat-stroked-button
+                      type="button"
+                      class="ai-reply-btn"
+                      (click)="sendAiSuggestion(reply)"
+                    >
+                      <mat-icon>send</mat-icon>
+                      <span>{{ reply }}</span>
+                    </button>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+
+          <!-- Card 3: Informações do Cliente -->
+          <div class="ai-card client-info-card">
+            <div class="card-header">
+              <mat-icon>person</mat-icon>
+              <strong>Ficha do Cliente</strong>
+            </div>
+            <div class="card-body">
+              @if (contact.profilePicUrl) {
+                <div class="client-card-profile">
+                  <img [src]="contact.profilePicUrl" [alt]="contact.name" class="client-card-img" />
+                </div>
+              }
+              <div class="info-row">
+                <span class="label">Nome:</span>
+                <span class="val">{{ contact.name }}</span>
+              </div>
+              <div class="info-row">
+                <span class="label">Telefone:</span>
+                <span class="val">{{ contact.phone }}</span>
+              </div>
+              @if (contact.address) {
+                <div class="info-row">
+                  <span class="label">Endereço:</span>
+                  <span class="val">{{ contact.address }}</span>
+                </div>
+              }
+              <div class="info-row">
+                <span class="label">Status:</span>
+                <span class="val" [class.badge-active-order]="contact.hasActiveOrder">
+                  {{ contact.hasActiveOrder ? 'Pedido #' + contact.activeOrderCode : 'Sem pedido aberto' }}
+                </span>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    </aside>
+  </div>
+} @else {
+  <!-- Estado Desconectado -->
+  <div class="whatsapp-disconnected-state">
+    <div class="disconnected-card">
+      <div class="icon-circle">
+        <mat-icon>phonelink_off</mat-icon>
+      </div>
+      <h2>WhatsApp Desconectado</h2>
+      <p class="disconnected-description">
+        Conecte o WhatsApp da sua pizzaria para visualizar as conversas com clientes, receber pedidos e enviar mensagens pelo sistema.
+      </p>
+      <button
+        mat-flat-button
+        color="primary"
+        type="button"
+        class="connect-cta-btn"
+        (click)="openReconnectModal()"
+      >
+        <mat-icon>qr_code_scanner</mat-icon>
+        Conectar WhatsApp da Empresa
+      </button>
+    </div>
+  </div>
+}
+</div>

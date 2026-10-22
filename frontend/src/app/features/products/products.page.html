@@ -1,0 +1,154 @@
+<div class="page">
+  <div class="page-header">
+    <h1 class="page-title">Produtos</h1>
+    @if (activeTab() === 0) {
+      <button mat-flat-button color="primary" type="button" (click)="openProduct()">
+        <mat-icon>add</mat-icon>
+        Novo produto
+      </button>
+    } @else {
+      <button mat-flat-button color="primary" type="button" (click)="openSize()">
+        <mat-icon>add</mat-icon>
+        Novo tamanho
+      </button>
+    }
+  </div>
+
+  <mat-tab-group [selectedIndex]="activeTab()" (selectedIndexChange)="onTab($event)">
+    <!-- ============================== Produtos ============================== -->
+    <mat-tab label="Produtos">
+      <div class="filter-row">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-field">
+          <mat-label>Buscar produto</mat-label>
+          <input matInput [formControl]="searchControl" placeholder="Digite o nome…" autocomplete="off" />
+          <mat-icon matPrefix>search</mat-icon>
+        </mat-form-field>
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Categoria</mat-label>
+          <mat-select [value]="category()" (selectionChange)="onCategory($event.value)">
+            @for (cat of categories; track cat) {
+              <mat-option [value]="cat">{{ cat ? categoryLabels[cat] : 'Todas' }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      @if (productsLoading()) {
+        <div class="loading">
+          <mat-spinner diameter="40" />
+        </div>
+      } @else if (filteredProducts().length === 0) {
+        <div class="empty-state">
+          <mat-icon>inventory_2</mat-icon>
+          <p class="empty-title">Nenhum produto encontrado</p>
+          <p>Cadastre sabores de pizza, bebidas e outros produtos vendidos.</p>
+          <button mat-stroked-button color="primary" type="button" (click)="openProduct()">
+            <mat-icon>add</mat-icon>
+            Novo produto
+          </button>
+        </div>
+      } @else {
+        <div class="table-wrap">
+          <table mat-table [dataSource]="filteredProducts()" class="full-width">
+            <ng-container matColumnDef="name">
+              <th mat-header-cell *matHeaderCellDef>Nome</th>
+              <td mat-cell *matCellDef="let p">
+                <div class="product-cell-name">
+                  <div class="product-thumb-wrapper">
+                    <mat-icon class="thumb-fallback-icon">
+                      {{ p.category === 'Beverage' ? 'local_drink' : 'local_pizza' }}
+                    </mat-icon>
+                    @if (p.imageUrl) {
+                      <img
+                        [src]="p.imageUrl"
+                        [alt]="p.name"
+                        class="product-thumb-img"
+                        (error)="onThumbError($event)"
+                      />
+                    }
+                  </div>
+                  <div class="product-name-info">
+                    <span class="product-title">{{ p.name }}</span>
+                  </div>
+                </div>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="category">
+              <th mat-header-cell *matHeaderCellDef>Categoria</th>
+              <td mat-cell *matCellDef="let p">{{ categoryLabel(p.category) }}</td>
+            </ng-container>
+            <ng-container matColumnDef="status">
+              <th mat-header-cell *matHeaderCellDef>Status</th>
+              <td mat-cell *matCellDef="let p">
+                <mat-chip [class.pz-chip-ok]="p.isActive" [class.pz-chip-warn]="!p.isActive">
+                  <mat-icon matChipAvatar>{{ p.isActive ? 'check_circle' : 'error' }}</mat-icon>
+                  {{ p.isActive ? 'Ativo' : 'Inativo' }}
+                </mat-chip>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef aria-label="Ações"> </th>
+              <td mat-cell *matCellDef="let p" class="cell-actions">
+                <button mat-icon-button type="button" matTooltip="Editar produto" (click)="openProduct(p)">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button mat-icon-button type="button" matTooltip="Excluir produto" (click)="removeProduct(p)">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="productColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: productColumns"></tr>
+          </table>
+        </div>
+      }
+    </mat-tab>
+
+    <!-- ============================== Tamanhos ============================== -->
+    <mat-tab label="Tamanhos">
+      @if (sizesLoading()) {
+        <div class="loading">
+          <mat-spinner diameter="40" />
+        </div>
+      } @else if (sizes().length === 0) {
+        <div class="empty-state">
+          <mat-icon>straighten</mat-icon>
+          <p class="empty-title">Nenhum tamanho cadastrado</p>
+          <p>Cadastre os tamanhos de pizza (ex.: Broto, Média, Grande) para precificar fichas e mistas.</p>
+          <button mat-stroked-button color="primary" type="button" (click)="openSize()">
+            <mat-icon>add</mat-icon>
+            Novo tamanho
+          </button>
+        </div>
+      } @else {
+        <div class="table-wrap">
+          <table mat-table [dataSource]="sizes()" class="full-width">
+            <ng-container matColumnDef="name">
+              <th mat-header-cell *matHeaderCellDef>Nome</th>
+              <td mat-cell *matCellDef="let s">{{ s.name }}</td>
+            </ng-container>
+            <ng-container matColumnDef="diameterCm">
+              <th mat-header-cell *matHeaderCellDef>Diâmetro (cm)</th>
+              <td mat-cell *matCellDef="let s">{{ s.diameterCm }}</td>
+            </ng-container>
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef aria-label="Ações"> </th>
+              <td mat-cell *matCellDef="let s" class="cell-actions">
+                <button mat-icon-button type="button" matTooltip="Editar tamanho" (click)="openSize(s)">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button mat-icon-button type="button" matTooltip="Excluir tamanho" (click)="removeSize(s)">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="sizeColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: sizeColumns"></tr>
+          </table>
+        </div>
+      }
+    </mat-tab>
+  </mat-tab-group>
+</div>

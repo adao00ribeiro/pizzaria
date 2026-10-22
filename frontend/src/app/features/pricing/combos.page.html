@@ -1,0 +1,66 @@
+<div class="page">
+  <div class="page-header">
+    <h1 class="page-title">Combos</h1>
+    <button mat-flat-button color="primary" type="button" (click)="openForm()">
+      <mat-icon>add</mat-icon>
+      Novo combo
+    </button>
+  </div>
+
+  <p class="hint-text" style="margin-top: -8px;">
+    Combos agrupam pizzas e bebidas com desconto ou preço fixo. O custo e a margem são recalculados no servidor.
+  </p>
+
+  @if (loading()) {
+    <div class="loading">
+      <mat-spinner diameter="40" />
+    </div>
+  } @else if (combos().length === 0) {
+    <div class="empty-state">
+      <mat-icon>featured_play_list</mat-icon>
+      <p class="empty-title">Nenhum combo cadastrado</p>
+      <p>Crie combos como "2 pizzas + refrigerante" com desconto ou preço fechado.</p>
+      <button mat-stroked-button color="primary" type="button" (click)="openForm()">
+        <mat-icon>add</mat-icon>
+        Novo combo
+      </button>
+    </div>
+  } @else {
+    <div class="table-wrap">
+      <table mat-table [dataSource]="combos()" class="full-width">
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef>Nome</th>
+          <td mat-cell *matCellDef="let c">{{ c.name }}</td>
+        </ng-container>
+        <ng-container matColumnDef="discountValue">
+          <th mat-header-cell *matHeaderCellDef>Desconto</th>
+          <td mat-cell *matCellDef="let c">{{ c.discountValue | brl }}</td>
+        </ng-container>
+        <ng-container matColumnDef="fixedPrice">
+          <th mat-header-cell *matHeaderCellDef>Preço fixo</th>
+          <td mat-cell *matCellDef="let c">{{ c.fixedPrice ? (c.fixedPrice | brl) : '—' }}</td>
+        </ng-container>
+        <ng-container matColumnDef="items">
+          <th mat-header-cell *matHeaderCellDef>Itens</th>
+          <td mat-cell *matCellDef="let c">
+            <span class="cell-secondary">{{ itemSummary(c) }}</span>
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef aria-label="Ações"> </th>
+          <td mat-cell *matCellDef="let c" class="cell-actions">
+            <button mat-icon-button type="button" matTooltip="Editar combo" (click)="openForm(c)">
+              <mat-icon>edit</mat-icon>
+            </button>
+            <button mat-icon-button type="button" matTooltip="Excluir combo" (click)="remove(c)">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="columns"></tr>
+        <tr mat-row *matRowDef="let row; columns: columns"></tr>
+      </table>
+    </div>
+  }
+</div>
