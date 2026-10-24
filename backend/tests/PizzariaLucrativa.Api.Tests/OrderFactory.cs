@@ -196,4 +196,31 @@ internal static class OrderFactory
         var root = json.RootElement;
         return (root.GetProperty("id").GetGuid(), root.GetProperty("code").GetString()!);
     }
+
+    public static async Task<(Guid Id, string Name, decimal Price)> CreateComboAsync(
+        HttpClient client, string token, string name, decimal? fixedPrice, decimal discountValue,
+        params (Guid ProductId, Guid? SizeId, int Quantity)[] items)
+    {
+        var response = await client.WithToken(token).PostAsJsonAsync("/api/v1/combos", new
+        {
+            name,
+            discountValue,
+            fixedPrice,
+            items = items.Select(i => new
+            {
+                productId = i.ProductId,
+                sizeId = i.SizeId,
+                quantity = i.Quantity
+            }).ToArray()
+        });
+        response.EnsureSuccessStatusCode();
+
+        using var json = await TestClient.ReadJsonAsync(response);
+        var root = json.RootElement;
+        return (
+            root.GetProperty("id").GetGuid(),
+            root.GetProperty("name").GetString()!,
+            root.GetProperty("totalPrice").GetDecimal()
+        );
+    }
 }

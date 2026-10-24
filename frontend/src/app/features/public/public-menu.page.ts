@@ -172,7 +172,7 @@ export interface AvailablePizza {
                 <mat-card-content>
                   <h2 class="card-title">Combos especiais</h2>
                   <div class="pz-quick-list">
-                    @for (combo of m.combos; track combo.comboId) {
+                    @for (combo of m.combos; track combo.comboId || combo.id || $index) {
                       <div class="pz-quick-item">
                         <div>
                           <strong>{{ combo.name }}</strong>
@@ -408,7 +408,7 @@ export class PublicMenuPage {
       label: combo.name,
       sublabel: combo.items.map((i) => `${i.quantity}x ${i.productName}`).join(' + '),
       sizeId: null,
-      comboId: combo.comboId,
+      comboId: combo.comboId || combo.id || null,
       flavors: [],
       unitPrice: combo.price,
       quantity: 1,

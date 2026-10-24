@@ -215,7 +215,10 @@ public sealed record PublicComboDto(
     Guid Id,
     string Name,
     decimal Price,
-    IReadOnlyList<PublicComboItemDto> Items);
+    IReadOnlyList<PublicComboItemDto> Items)
+{
+    public Guid ComboId => Id;
+}
 
 public sealed record PublicComboItemDto(string ProductName, string? SizeName, int Quantity);
 

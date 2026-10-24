@@ -189,7 +189,8 @@ export interface PublicComboItemDto {
 }
 
 export interface PublicComboDto {
-  comboId: string;
+  id?: string;
+  comboId?: string;
   name: string;
   price: number;
   items: PublicComboItemDto[];

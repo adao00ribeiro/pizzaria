@@ -199,4 +199,120 @@ public sealed class OrderFlowTests
             .PostAsync($"/api/v1/kitchen/queue/{orderId}/start", null);
         await TestClient.AssertErrorEnvelopeAsync(startB, 404);
     }
+
+    [Fact]
+    public async Task CreateOrder_WithComboItem_SucceedsAndCalculatesTotals()
+    {
+        using var factory = new ApiFactory();
+        using var client = factory.CreateClient();
+
+        var owner = await TestClient.RegisterAsync(client, "Pizzaria com Combo");
+        var token = owner.AccessToken;
+
+        // 1. Cadastra insumos, tamanho, pizza com ficha técnica e bebida
+        var muçarela = await CreateIngredientAsync(client, token, "Muçarela", "g", 5000, 32.90m);
+        var calabresa = await CreateIngredientAsync(client, token, "Calabresa", "g", 1000, 9.50m);
+        await AddInitialStockAsync(client, token, muçarela, 5000);
+        await AddInitialStockAsync(client, token, calabresa, 1000);
+
+        var size = await CreateSizeAsync(client, token, "Grande");
+        var pizza = await CreatePizzaAsync(client, token, "Calabresa");
+        await CreateSheetAsync(client, token, pizza, size,
+            (muçarela, 180m, "g"), (calabresa, 100m, "g"));
+
+        var beverage = await CreateBeverageAsync(client, token, "Refrigerante 2L", purchasePrice: 5.00m, markupMultiplier: 2.0m);
+
+        // 2. Cadastra um combo via /api/v1/combos contendo 1 Pizza e 1 Bebida
+        var (comboId, comboName, comboPrice) = await CreateComboAsync(
+            client, token, "Combo Família", fixedPrice: null, discountValue: 5.00m,
+            (pizza, size, 1),
+            (beverage, null, 1));
+
+        Assert.True(comboPrice > 0m);
+
+        // 3. Valida no catálogo (/api/v1/orders/catalog) que o combo possui tanto id quanto comboId
+        var catalogResponse = await client.WithToken(token).GetAsync("/api/v1/orders/catalog");
+        catalogResponse.EnsureSuccessStatusCode();
+
+        using var catalogJson = await TestClient.ReadJsonAsync(catalogResponse);
+        var combos = catalogJson.RootElement.GetProperty("combos").EnumerateArray().ToList();
+        var catalogCombo = combos.First(c => c.GetProperty("id").GetGuid() == comboId);
+
+        Assert.Equal(comboId, catalogCombo.GetProperty("id").GetGuid());
+        Assert.Equal(comboId, catalogCombo.GetProperty("comboId").GetGuid());
+        Assert.Equal(comboName, catalogCombo.GetProperty("name").GetString());
+        Assert.Equal(comboPrice, catalogCombo.GetProperty("price").GetDecimal());
+
+        // 4. Cria o pedido via POST /api/v1/orders com o item do combo
+        var orderResponse = await client.WithToken(token).PostAsJsonAsync("/api/v1/orders", new
+        {
+            type = "Counter",
+            customerName = "Cliente Combo",
+            customerPhone = (string?)null,
+            addressDistrict = (string?)null,
+            addressStreet = (string?)null,
+            addressNumber = (string?)null,
+            addressComplement = (string?)null,
+            notes = "Pedido de teste com combo",
+            paymentMethod = "Cash",
+            discount = 0m,
+            items = new[]
+            {
+                new
+                {
+                    sizeId = (Guid?)null,
+                    comboId = (Guid?)comboId,
+                    quantity = 1,
+                    notes = (string?)null,
+                    flavors = Array.Empty<object>()
+                }
+            }
+        });
+
+        Assert.True(orderResponse.IsSuccessStatusCode);
+        using var orderJson = await TestClient.ReadJsonAsync(orderResponse);
+        var orderRoot = orderJson.RootElement;
+        var orderId = orderRoot.GetProperty("id").GetGuid();
+        var orderTotal = orderRoot.GetProperty("total").GetDecimal();
+
+        Assert.Equal(comboPrice, orderTotal);
+
+        var orderItems = orderRoot.GetProperty("items").EnumerateArray().ToList();
+        Assert.Single(orderItems);
+        var orderItem = orderItems[0];
+        Assert.Equal(comboId, orderItem.GetProperty("comboId").GetGuid());
+        Assert.Equal(comboName, orderItem.GetProperty("comboName").GetString());
+        Assert.Equal(comboPrice, orderItem.GetProperty("unitPrice").GetDecimal());
+        Assert.Equal(comboPrice, orderItem.GetProperty("total").GetDecimal());
+
+        // 5. Valida o ticket do pedido (GET /api/v1/orders/{id}/ticket)
+        var ticketResponse = await client.WithToken(token).GetAsync($"/api/v1/orders/{orderId}/ticket");
+        ticketResponse.EnsureSuccessStatusCode();
+
+        using var ticketJson = await TestClient.ReadJsonAsync(ticketResponse);
+        var ticketRoot = ticketJson.RootElement;
+        Assert.Equal(orderId, ticketRoot.GetProperty("orderId").GetGuid());
+        Assert.Equal(comboPrice, ticketRoot.GetProperty("total").GetDecimal());
+
+        var ticketItems = ticketRoot.GetProperty("items").EnumerateArray().ToList();
+        Assert.Single(ticketItems);
+        var ticketItem = ticketItems[0];
+        Assert.Equal(comboName, ticketItem.GetProperty("comboName").GetString());
+        Assert.Equal(comboName, ticketItem.GetProperty("title").GetString());
+        Assert.Equal(comboPrice, ticketItem.GetProperty("unitPrice").GetDecimal());
+        Assert.Equal(comboPrice, ticketItem.GetProperty("total").GetDecimal());
+
+        // 6. Valida a exibição na cozinha (GET /api/v1/kitchen/queue)
+        var kitchenResponse = await client.WithToken(token).GetAsync("/api/v1/kitchen/queue");
+        kitchenResponse.EnsureSuccessStatusCode();
+
+        using var kitchenJson = await TestClient.ReadJsonAsync(kitchenResponse);
+        var kitchenItems = kitchenJson.RootElement.GetProperty("items").EnumerateArray().ToList();
+        var kitchenOrder = kitchenItems.FirstOrDefault(k => k.GetProperty("id").GetGuid() == orderId);
+        Assert.NotNull(kitchenOrder.ValueKind != System.Text.Json.JsonValueKind.Undefined ? (object)kitchenOrder : null);
+
+        var kItems = kitchenOrder.GetProperty("items").EnumerateArray().ToList();
+        Assert.Single(kItems);
+        Assert.Equal(comboName, kItems[0].GetProperty("comboName").GetString());
+    }
 }

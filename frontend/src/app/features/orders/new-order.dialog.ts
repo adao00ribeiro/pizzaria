@@ -160,7 +160,7 @@ export interface NewOrderDialogData {
                       <p class="hint-text">Nenhum combo cadastrado.</p>
                     } @else {
                       <div class="pz-quick-list">
-                        @for (combo of cat.combos; track combo.comboId) {
+                        @for (combo of cat.combos; track combo.comboId || combo.id || $index) {
                           <div class="pz-quick-item">
                             <div class="pz-quick-item-leading">
                               <div class="pz-item-thumb">
@@ -549,7 +549,7 @@ export class NewOrderDialog {
       label: combo.name,
       sublabel: combo.items.map((i) => `${i.quantity}x ${i.productName}`).join(' + '),
       sizeId: null,
-      comboId: combo.comboId,
+      comboId: combo.comboId || combo.id || null,
       flavors: [],
       unitPrice: combo.price,
       quantity: 1,
