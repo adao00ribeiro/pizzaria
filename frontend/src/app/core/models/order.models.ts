@@ -36,6 +36,10 @@ export interface OrderDto {
   paymentMethod: PaymentMethod | null;
   customerName: string | null;
   customerPhone: string | null;
+  addressDistrict?: string | null;
+  addressStreet?: string | null;
+  addressNumber?: string | null;
+  addressComplement?: string | null;
   deliveryAddress: string | null;
   notes: string | null;
   cancellationReason: string | null;
@@ -102,6 +106,10 @@ export interface CreateOrderInput {
   paymentMethod?: PaymentMethod | null;
   customerName?: string | null;
   customerPhone?: string | null;
+  addressDistrict?: string | null;
+  addressStreet?: string | null;
+  addressNumber?: string | null;
+  addressComplement?: string | null;
   deliveryAddress?: string | null;
   notes?: string | null;
   discount?: number;
@@ -113,6 +121,10 @@ export interface CreatePublicOrderInput {
   paymentMethod?: PaymentMethod | null;
   customerName: string;
   customerPhone: string;
+  addressDistrict?: string | null;
+  addressStreet?: string | null;
+  addressNumber?: string | null;
+  addressComplement?: string | null;
   deliveryAddress?: string | null;
   notes?: string | null;
   items: CreateOrderItemInput[];
@@ -206,24 +218,45 @@ export interface PublicTrackingStepDto {
   changedAt: string;
 }
 
+export interface PublicOrderTrackingFlavorDto {
+  productName: string;
+  sharePercentage: number;
+}
+
+export interface PublicOrderTrackingItemDto {
+  quantity: number;
+  sizeName: string | null;
+  comboName: string | null;
+  flavors: PublicOrderTrackingFlavorDto[];
+  description?: string | null;
+  unitPrice?: number;
+  total?: number;
+  notes?: string | null;
+  flavorsLabel?: string | null;
+}
+
 export interface PublicOrderTrackingDto {
   pizzeriaName: string;
-  slug: string;
+  slug?: string;
   code: string;
   type: OrderType;
   status: OrderStatus;
   paymentMethod: PaymentMethod | null;
   customerFirstName: string | null;
-  cancellationReason: string | null;
+  cancellationReason?: string | null;
+  cancelReason?: string | null;
   subtotal: number;
   deliveryFee: number;
   discount: number;
   total: number;
   placedAt: string;
-  completedAt: string | null;
-  cancelledAt: string | null;
-  items: OrderTicketItemDto[];
-  timeline: PublicTrackingStepDto[];
+  startedAt?: string | null;
+  readyAt?: string | null;
+  deliveredAt?: string | null;
+  completedAt?: string | null;
+  cancelledAt?: string | null;
+  items: PublicOrderTrackingItemDto[];
+  timeline?: PublicTrackingStepDto[];
 }
 
 /** Item no carrinho (atendente ou público) */

@@ -11,6 +11,16 @@ import {
   PublicOrderTrackingDto,
 } from '../../core/models/order.models';
 
+export interface ViaCepResult {
+  cep?: string;
+  logradouro?: string;
+  complemento?: string;
+  bairro?: string;
+  localidade?: string;
+  uf?: string;
+  erro?: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class PublicMenuService {
   private readonly http = inject(HttpClient);
@@ -95,6 +105,11 @@ export class PublicMenuService {
     return this.http.get<PublicOrderTrackingDto>(
       `${this.base}/${encodeURIComponent(slug)}/orders/${encodeURIComponent(code)}`,
     );
+  }
+
+  lookupCep(cep: string): Observable<ViaCepResult> {
+    const clean = (cep || '').replace(/\D/g, '');
+    return this.http.get<ViaCepResult>(`https://viacep.com.br/ws/${clean}/json/`);
   }
 
   private saveCart(slug: string, items: CartDraftItem[]): void {

@@ -243,19 +243,21 @@ export interface AvailablePizza {
 
           @if (publicService.totalCount() > 0) {
             <footer class="pz-sticky-cart">
-              <div>
-                <strong>{{ publicService.totalCount() }} item(ns) na sacola</strong>
-                <div>Subtotal: {{ publicService.subtotal() | brl }}</div>
+              <div class="pz-sticky-cart-content">
+                <div>
+                  <strong>{{ publicService.totalCount() }} item(ns) na sacola</strong>
+                  <div>Subtotal: {{ publicService.subtotal() | brl }}</div>
+                </div>
+                <a
+                  mat-flat-button
+                  color="primary"
+                  class="pz-touch-btn"
+                  [routerLink]="['/checkout', slug()]"
+                >
+                  Ver sacola e finalizar
+                  <mat-icon>arrow_forward</mat-icon>
+                </a>
               </div>
-              <a
-                mat-flat-button
-                color="primary"
-                class="pz-touch-btn"
-                [routerLink]="['/checkout', slug()]"
-              >
-                Ver sacola e finalizar
-                <mat-icon>arrow_forward</mat-icon>
-              </a>
             </footer>
           }
         }

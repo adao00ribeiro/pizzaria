@@ -79,7 +79,8 @@ public sealed partial class OrderService : IOrderService
             Notes: input.Notes,
             PaymentMethod: input.PaymentMethod,
             Discount: 0m, // Nunca aceita desconto vindo do cliente anônimo
-            Items: input.Items);
+            Items: input.Items,
+            DeliveryAddress: input.DeliveryAddress);
 
         return CreateCoreAsync(createInput, isPublic: true, idempotencyKey, ct);
     }
@@ -90,6 +91,7 @@ public sealed partial class OrderService : IOrderService
         string? idempotencyKey,
         CancellationToken ct)
     {
+        var normalizedInput = NormalizeAddress(input);
         var tenantId = _tenant.GetTenantId();
         var normalizedKey = Clean(idempotencyKey);
 
@@ -111,7 +113,7 @@ public sealed partial class OrderService : IOrderService
                         return await MapAsync(existing, ct);
                 }
 
-                var created = await PersistNewOrderAsync(input, isPublic, tenantId, ct);
+                var created = await PersistNewOrderAsync(normalizedInput, isPublic, tenantId, ct);
                 IdempotencyMap[keyTuple] = created.Id;
                 return created;
             }
@@ -121,7 +123,7 @@ public sealed partial class OrderService : IOrderService
             }
         }
 
-        return await PersistNewOrderAsync(input, isPublic, tenantId, ct);
+        return await PersistNewOrderAsync(normalizedInput, isPublic, tenantId, ct);
     }
 
     private async Task<OrderDto> PersistNewOrderAsync(
@@ -533,12 +535,37 @@ public sealed partial class OrderService : IOrderService
         var tenant = await _db.FirstOrDefaultAsync(
             _db.Set<Tenant>().Where(t => t.Id == tenantId), ct);
 
-        var items = dto.Items.Select(i => new PublicOrderTrackingItemDto(
-            i.Quantity,
-            i.SizeName,
-            i.ComboName,
-            i.Flavors.Select(f => new OrderTicketFlavorDto(f.ProductName, f.SharePercentage)).ToList()
-        )).ToList();
+        var items = dto.Items.Select(i =>
+        {
+            var title = i.ComboName is not null
+                ? i.ComboName
+                : i.SizeName is not null
+                    ? $"Pizza {i.SizeName}"
+                    : i.Flavors.FirstOrDefault()?.ProductName ?? "Item";
+
+            var flavorParts = i.Flavors.Count > 1
+                ? string.Join(", ", i.Flavors.Select(f => $"{Math.Round(f.SharePercentage, 0)}% {f.ProductName}"))
+                : i.Flavors.FirstOrDefault()?.ProductName;
+
+            var flavors = i.Flavors
+                .Select(f => new OrderTicketFlavorDto(f.ProductName, f.SharePercentage))
+                .ToList();
+
+            return new PublicOrderTrackingItemDto(
+                Quantity: i.Quantity,
+                SizeName: i.SizeName,
+                ComboName: i.ComboName,
+                Flavors: flavors,
+                Description: title,
+                UnitPrice: i.UnitPrice,
+                Total: i.Total,
+                Notes: i.Notes,
+                FlavorsLabel: flavorParts);
+        }).ToList();
+
+        var firstName = !string.IsNullOrWhiteSpace(order.CustomerName)
+            ? order.CustomerName.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries)[0]
+            : null;
 
         return new PublicOrderTrackingDto(
             PizzeriaName: tenant?.Name ?? "Pizzaria",
@@ -554,7 +581,11 @@ public sealed partial class OrderService : IOrderService
             Subtotal: dto.Subtotal,
             DeliveryFee: dto.DeliveryFee,
             Total: dto.Total,
-            Items: items);
+            Items: items,
+            Discount: dto.Discount,
+            CustomerFirstName: firstName,
+            PaymentMethod: dto.PaymentMethod,
+            Slug: tenant?.Slug);
     }
 
     // ---------------------------------------------------------------- status
@@ -777,6 +808,122 @@ public sealed partial class OrderService : IOrderService
             order.PlacedAt, order.StartedAt, order.ReadyAt, order.DeliveredAt, order.CancelledAt,
             order.CancelReason,
             itemDtos);
+    }
+
+    private static CreateOrderInput NormalizeAddress(CreateOrderInput input)
+    {
+        if (input.Type != OrderType.Delivery)
+            return input;
+
+        var street = Clean(input.AddressStreet);
+        var number = Clean(input.AddressNumber);
+        var district = Clean(input.AddressDistrict);
+        var complement = Clean(input.AddressComplement);
+
+        if ((string.IsNullOrWhiteSpace(street) || string.IsNullOrWhiteSpace(district) || string.IsNullOrWhiteSpace(number))
+            && !string.IsNullOrWhiteSpace(input.DeliveryAddress))
+        {
+            var parsed = ParseDeliveryAddress(input.DeliveryAddress);
+            street = !string.IsNullOrWhiteSpace(street) ? street : parsed.Street;
+            number = !string.IsNullOrWhiteSpace(number) ? number : parsed.Number;
+            district = !string.IsNullOrWhiteSpace(district) ? district : parsed.District;
+            complement = !string.IsNullOrWhiteSpace(complement) ? complement : parsed.Complement;
+        }
+
+        return input with
+        {
+            AddressStreet = street,
+            AddressNumber = number,
+            AddressDistrict = district,
+            AddressComplement = complement
+        };
+    }
+
+    public static (string? Street, string? Number, string? District, string? Complement) ParseDeliveryAddress(string raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+            return (null, null, null, null);
+
+        var trimmed = raw.Trim();
+        var parts = trimmed.Split(new[] { ',', '-' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        string? street;
+        string? number;
+        string? district;
+        string? complement = null;
+
+        if (parts.Length == 1)
+        {
+            var match = Regex.Match(parts[0], @"^(.+?)(?:\s+n[º°]?\s*|\s+)(\d+[a-zA-Z]?)$", RegexOptions.IgnoreCase);
+            if (match.Success)
+            {
+                street = match.Groups[1].Value.Trim();
+                number = match.Groups[2].Value.Trim();
+            }
+            else
+            {
+                street = parts[0];
+                number = "s/n";
+            }
+            district = "Centro";
+        }
+        else if (parts.Length == 2)
+        {
+            street = parts[0];
+            if (parts[1].Any(char.IsDigit))
+            {
+                number = parts[1];
+                district = "Centro";
+            }
+            else
+            {
+                var match = Regex.Match(parts[0], @"^(.+?)(?:\s+n[º°]?\s*|\s+)(\d+[a-zA-Z]?)$", RegexOptions.IgnoreCase);
+                if (match.Success)
+                {
+                    street = match.Groups[1].Value.Trim();
+                    number = match.Groups[2].Value.Trim();
+                }
+                else
+                {
+                    number = "s/n";
+                }
+                district = parts[1];
+            }
+        }
+        else if (parts.Length == 3)
+        {
+            if (!parts[1].Any(char.IsDigit) && parts[0].Any(char.IsDigit))
+            {
+                var match = Regex.Match(parts[0], @"^(.+?)(?:\s+n[º°]?\s*|\s+)(\d+[a-zA-Z]?)$", RegexOptions.IgnoreCase);
+                if (match.Success)
+                {
+                    street = match.Groups[1].Value.Trim();
+                    number = match.Groups[2].Value.Trim();
+                }
+                else
+                {
+                    street = parts[0];
+                    number = "s/n";
+                }
+                district = parts[1];
+                complement = parts[2];
+            }
+            else
+            {
+                street = parts[0];
+                number = parts[1];
+                district = parts[2];
+            }
+        }
+        else
+        {
+            street = parts[0];
+            number = parts[1];
+            district = parts[2];
+            complement = string.Join(", ", parts.Skip(3));
+        }
+
+        return (street, number ?? "s/n", district ?? "Centro", complement);
     }
 
     private static string? Clean(string? value)

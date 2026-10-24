@@ -293,6 +293,87 @@ public sealed class Sprints4To7IntegrationTests
     }
 
     [Fact]
+    public async Task Sprint5_PublicCheckout_Delivery_WithFreeformAddress_OrStructuredAddress_Succeeds()
+    {
+        using var factory = new ApiFactory();
+        using var ownerClient = factory.CreateClient();
+        using var anonClient = factory.CreateClient();
+
+        var ownerA = await TestClient.RegisterAsync(ownerClient, "Pizzaria Delivery Test");
+        var tokenA = ownerA.AccessToken;
+        var slugA = await GetSlugAsync(ownerClient, tokenA);
+
+        var mucarela = await CreateIngredientAsync(ownerClient, tokenA, "Muçarela Delivery", "g", 5000, 32.90m);
+        var size = await CreateSizeAsync(ownerClient, tokenA, "Grande");
+        var pizza = await CreatePizzaAsync(ownerClient, tokenA, "Muçarela Delivery");
+        await CreateSheetAsync(ownerClient, tokenA, pizza, size, (mucarela, 200m, "g"));
+
+        // 1. Envio com string livre em deliveryAddress (ex.: "rua iris 29b, jd vitoria , b") sem campos estruturados
+        var freeformRes = await anonClient.PostAsJsonAsync($"/api/v1/public/{slugA}/orders", new
+        {
+            type = "Delivery",
+            customerName = "Cliente Endereço Livre",
+            customerPhone = "44999246859",
+            deliveryAddress = "rua iris 29b, jd vitoria , b",
+            paymentMethod = "Pix",
+            items = new[]
+            {
+                new
+                {
+                    sizeId = (Guid?)size,
+                    comboId = (Guid?)null,
+                    quantity = 1,
+                    flavors = new[] { new { productId = pizza, sharePercentage = 100m } }
+                }
+            }
+        });
+        freeformRes.EnsureSuccessStatusCode();
+
+        using (var freeformJson = await TestClient.ReadJsonAsync(freeformRes))
+        {
+            var street = freeformJson.RootElement.GetProperty("addressStreet").GetString();
+            var district = freeformJson.RootElement.GetProperty("addressDistrict").GetString();
+            var number = freeformJson.RootElement.GetProperty("addressNumber").GetString();
+            Assert.Equal("rua iris", street);
+            Assert.Equal("29b", number);
+            Assert.Equal("jd vitoria", district);
+        }
+
+        // 2. Envio com campos estruturados (Rua, Número, Bairro, Complemento)
+        var structuredRes = await anonClient.PostAsJsonAsync($"/api/v1/public/{slugA}/orders", new
+        {
+            type = "Delivery",
+            customerName = "Cliente Estruturado",
+            customerPhone = "11988887777",
+            addressStreet = "Rua das Flores",
+            addressNumber = "123",
+            addressDistrict = "Jardim das Rosas",
+            addressComplement = "Apto 42",
+            deliveryAddress = "Rua das Flores, 123 - Jardim das Rosas (Apto 42)",
+            paymentMethod = "Card",
+            items = new[]
+            {
+                new
+                {
+                    sizeId = (Guid?)size,
+                    comboId = (Guid?)null,
+                    quantity = 1,
+                    flavors = new[] { new { productId = pizza, sharePercentage = 100m } }
+                }
+            }
+        });
+        structuredRes.EnsureSuccessStatusCode();
+
+        using (var structuredJson = await TestClient.ReadJsonAsync(structuredRes))
+        {
+            Assert.Equal("Rua das Flores", structuredJson.RootElement.GetProperty("addressStreet").GetString());
+            Assert.Equal("123", structuredJson.RootElement.GetProperty("addressNumber").GetString());
+            Assert.Equal("Jardim das Rosas", structuredJson.RootElement.GetProperty("addressDistrict").GetString());
+            Assert.Equal("Apto 42", structuredJson.RootElement.GetProperty("addressComplement").GetString());
+        }
+    }
+
+    [Fact]
     public async Task Sprint6And7_ProfitReport_RoleAccess_ExcludesCancelled_AndConcurrentReadyConsumesOnce()
     {
         using var factory = new ApiFactory();

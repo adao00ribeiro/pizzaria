@@ -25,7 +25,7 @@ import { PublicMenuService } from './public-menu.service';
     BrlPipe,
   ],
   template: `
-    <div class="pz-public-shell">
+    <div class="pz-public-shell pz-tracking-shell">
       @if (loading()) {
         <div class="loading">
           <mat-spinner diameter="40" />
@@ -43,34 +43,42 @@ import { PublicMenuService } from './public-menu.service';
           </header>
 
           <main class="pz-public-container">
-            <mat-card class="section-card" style="text-align: center;">
+            <!-- Card 1 (Topo): Código de acompanhamento, badge de status e saudação -->
+            <mat-card class="section-card pz-tracking-code-card">
               <mat-card-content>
-                <div class="hint-text">Seu código de acompanhamento</div>
-                <div class="pz-tracking-big-code">{{ tr.code }}</div>
-                <span class="pz-status-badge status-{{ tr.status }}">
-                  {{ statusLabels[tr.status] }}
-                </span>
+                <div class="pz-code-badge-row">
+                  <div>
+                    <span class="hint-text" style="font-size: 0.75rem; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">
+                      Código de acompanhamento
+                    </span>
+                    <div class="pz-tracking-big-code">{{ tr.code }}</div>
+                  </div>
+                  <span class="pz-status-badge status-{{ tr.status }}">
+                    {{ statusLabels[tr.status] }}
+                  </span>
+                </div>
                 @if (tr.customerFirstName) {
-                  <p class="hint-text" style="margin-top: 8px;">
-                    Olá, <strong>{{ tr.customerFirstName }}</strong>! ({{ typeLabels[tr.type] }})
+                  <p class="pz-customer-greet">
+                    Olá, <strong>{{ tr.customerFirstName }}</strong>! Acompanhe seu pedido em tempo real abaixo.
                   </p>
+                }
+                @if (tr.status === 'Cancelled') {
+                  <div class="pz-cancel-banner" style="margin-top: 10px;">
+                    <strong>Pedido cancelado:</strong>
+                    {{ tr.cancellationReason || tr.cancelReason || 'Entre em contato com a pizzaria.' }}
+                  </div>
                 }
               </mat-card-content>
             </mat-card>
 
-            @if (tr.status === 'Cancelled') {
-              <mat-card class="section-card">
+            <!-- Card 2: Progresso do pedido com os passos -->
+            @if (tr.status !== 'Cancelled') {
+              <mat-card class="section-card pz-tracking-progress-card">
                 <mat-card-content>
-                  <div class="pz-cancel-banner">
-                    <strong>Pedido cancelado:</strong>
-                    {{ tr.cancellationReason || 'Entre em contato com a pizzaria.' }}
-                  </div>
-                </mat-card-content>
-              </mat-card>
-            } @else {
-              <mat-card class="section-card">
-                <mat-card-content>
-                  <h2 class="card-title">Progresso</h2>
+                  <h3 class="pz-sub-title">
+                    <mat-icon>timeline</mat-icon>
+                    <span>Progresso do pedido</span>
+                  </h3>
                   <div class="pz-tracking-steps">
                     @for (step of stepsFor(tr); track step) {
                       <div
@@ -89,30 +97,66 @@ import { PublicMenuService } from './public-menu.service';
               </mat-card>
             }
 
-            <mat-card class="section-card">
+            <!-- Card 3: Resumo do pedido (Itens, Detalhes, Totais e Ações) -->
+            <mat-card class="section-card pz-tracking-summary-card">
               <mat-card-content>
-                <h2 class="card-title">Resumo do pedido</h2>
-                <div class="pz-detail-items">
+                <div class="pz-card-header-row">
+                  <h3 class="pz-sub-title" style="margin: 0;">
+                    <mat-icon>receipt_long</mat-icon>
+                    <span>Resumo do pedido</span>
+                  </h3>
+                  <span class="pz-items-count-badge">{{ tr.items.length }} item(ns)</span>
+                </div>
+
+                <!-- Lista de itens com scroll interno suave -->
+                <div class="pz-detail-items pz-scrollable-items" style="margin-top: 12px;">
                   @for (it of tr.items; track $index) {
                     <div class="pz-detail-item">
-                      <div>
-                        <strong>{{ it.quantity }}x {{ it.description }}</strong>
-                        @if (it.flavorsLabel) {
-                          <div class="hint-text">{{ it.flavorsLabel }}</div>
+                      <div class="item-info">
+                        <div class="item-name-row">
+                          <span class="item-qty-pill">{{ it.quantity }}x</span>
+                          <strong class="item-title">{{ getItemTitle(it) }}</strong>
+                        </div>
+                        @if (getItemFlavors(it); as flavors) {
+                          <div class="item-flavors">
+                            <span class="flavor-chip">{{ flavors }}</span>
+                          </div>
                         }
                         @if (it.notes) {
-                          <div class="pz-item-note">Obs: {{ it.notes }}</div>
+                          <div class="pz-item-note">
+                            <mat-icon>edit_note</mat-icon>
+                            <span>Obs: {{ it.notes }}</span>
+                          </div>
                         }
                       </div>
-                      <strong>{{ it.total | brl }}</strong>
+                      <strong class="item-price">{{ getItemPrice(it) }}</strong>
                     </div>
                   }
                 </div>
 
+                <!-- Detalhes do pedido (Tipo de entrega, Forma de pagamento, Horário) -->
+                <div class="pz-order-meta-box">
+                  <div class="pz-meta-line">
+                    <mat-icon>{{ tr.type === 'Delivery' ? 'two_wheeler' : 'storefront' }}</mat-icon>
+                    <span><strong>Tipo:</strong> {{ typeLabels[tr.type] }}</span>
+                  </div>
+                  @if (tr.paymentMethod) {
+                    <div class="pz-meta-line">
+                      <mat-icon>payments</mat-icon>
+                      <span><strong>Pagamento:</strong> {{ paymentLabels[tr.paymentMethod] }}</span>
+                    </div>
+                  }
+                  <div class="pz-meta-line">
+                    <mat-icon>schedule</mat-icon>
+                    <span><strong>Horário:</strong> {{ tr.placedAt | date: 'dd/MM/yyyy HH:mm' }}</span>
+                  </div>
+                </div>
+
+                <!-- Totais (Subtotal, Taxa de entrega, Desconto, Total) -->
                 <div class="pz-totals-bar">
                   <div><span>Subtotal:</span> <strong>{{ tr.subtotal | brl }}</strong></div>
                   @if (tr.deliveryFee > 0) {
-                    <div><span>Entrega:</span> <strong>{{ tr.deliveryFee | brl }}</strong></div>
+                    <div><span>Taxa de entrega:</span> <strong>{{ tr.deliveryFee | brl }}</strong></div>
                   }
                   @if (tr.discount > 0) {
                     <div><span>Desconto:</span> <strong>- {{ tr.discount | brl }}</strong></div>
@@ -123,11 +167,13 @@ import { PublicMenuService } from './public-menu.service';
                   </div>
                 </div>
 
-                <div class="form-actions" style="margin-top: 16px;">
-                  <a mat-stroked-button [routerLink]="['/menu', tr.slug]">
+                <!-- Botões de ação ("Fazer outro pedido" e "Atualizar agora") -->
+                <div class="pz-tracking-actions">
+                  <a mat-stroked-button [routerLink]="['/menu', slug]" class="pz-btn-block">
+                    <mat-icon>restaurant_menu</mat-icon>
                     Fazer outro pedido
                   </a>
-                  <button mat-button type="button" (click)="refresh()">
+                  <button mat-button type="button" (click)="refresh()" class="pz-btn-block">
                     <mat-icon>refresh</mat-icon> Atualizar agora
                   </button>
                 </div>
@@ -152,7 +198,7 @@ export class PublicTrackingPage {
   readonly typeLabels = ORDER_TYPE_LABELS;
   readonly paymentLabels = PAYMENT_METHOD_LABELS;
 
-  private slug = '';
+  slug = '';
   private code = '';
 
   constructor() {
@@ -173,6 +219,36 @@ export class PublicTrackingPage {
     }, 15000);
 
     this.destroyRef.onDestroy(() => clearInterval(timer));
+  }
+
+  getItemTitle(it: any): string {
+    if (it.comboName) return it.comboName;
+    if (it.sizeName) return `Pizza ${it.sizeName}`;
+    if (it.description) return it.description;
+    if (it.flavors && it.flavors.length > 0) {
+      if (it.flavors.length === 1) return it.flavors[0].productName;
+      return 'Pizza meio a meio';
+    }
+    return 'Item do pedido';
+  }
+
+  getItemFlavors(it: any): string | null {
+    if (!it.sizeName && !it.comboName) return null; // Bebida ou item sem tamanho não duplica o próprio nome como sabor
+    if (it.flavorsLabel) return it.flavorsLabel;
+    if (it.flavors && it.flavors.length > 0) {
+      if (it.flavors.length === 1) return it.flavors[0].productName;
+      return it.flavors
+        .map((f: any) => `${Math.round(f.sharePercentage)}% ${f.productName}`)
+        .join(' + ');
+    }
+    return null;
+  }
+
+  getItemPrice(it: any): string {
+    const total = it.total ?? (it.unitPrice ? it.unitPrice * (it.quantity || 1) : 0);
+    return total > 0
+      ? total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+      : '';
   }
 
   refresh(initial = false): void {

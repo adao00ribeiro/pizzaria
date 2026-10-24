@@ -187,10 +187,19 @@ body.dark-theme {
 html,
 body {
   height: 100%;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: inherit;
 }
 
 body {
-  margin: 0;
+  overflow-x: hidden;
   font-family: Roboto, 'Helvetica Neue', sans-serif;
   background-color: var(--pz-bg-main, #fafafa);
   color: var(--pz-text-primary, rgba(0, 0, 0, 0.87));
@@ -3889,34 +3898,41 @@ body.dark-theme,
 // Cardápio Público — Bebidas com fotos
 // ---------------------------------------------------------------------------
 .pz-menu-beverage-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
-
-  @media (min-width: 640px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .pz-menu-beverage-item {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   padding: 10px 14px;
   border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 12px;
   background: #ffffff;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 
   &:hover {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   }
+
+  button {
+    flex-shrink: 0;
+  }
 }
 
 .pz-menu-beverage-thumb {
   position: relative;
-  width: 68px;
-  height: 68px;
+  width: 56px;
+  height: 56px;
+  min-width: 56px;
   border-radius: 10px;
   overflow: hidden;
   flex-shrink: 0;
@@ -3924,9 +3940,9 @@ body.dark-theme,
   border: 1px solid rgba(0, 0, 0, 0.06);
 
   .pz-menu-card-fallback mat-icon {
-    font-size: 30px;
-    width: 30px;
-    height: 30px;
+    font-size: 26px;
+    width: 26px;
+    height: 26px;
   }
 }
 
@@ -3938,9 +3954,18 @@ body.dark-theme,
   min-width: 0;
 
   .pz-menu-card-title {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: #1f2937;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .pz-menu-card-price {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #15803d;
   }
 }
 
@@ -4220,21 +4245,31 @@ mat-button-toggle-group {
   }
 }
 
-// Cardápio Público Mobile-First (Sprint 5)
+// ---------------------------------------------------------------------------
+// Cardápio Público, Checkout e Acompanhamento — 100% Mobile-First (Sprint 5)
+// ---------------------------------------------------------------------------
 .pz-public-shell {
   min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
   background: #f5f5f5;
-  padding-bottom: 92px;
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
 }
 
 .pz-public-header {
+  flex: 0 0 auto;
   background: #c62828;
   color: #ffffff;
-  padding: 16px;
+  padding: 12px 16px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  z-index: 20;
 }
 
 .pz-public-brand {
-  max-width: 840px;
+  max-width: 640px;
   margin: 0 auto;
   display: flex;
   align-items: center;
@@ -4243,16 +4278,29 @@ mat-button-toggle-group {
 
 .pz-public-brand h1 {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: 1.15rem;
+  font-weight: 700;
 }
 
 .pz-public-container {
-  max-width: 840px;
-  margin: 16px auto;
-  padding: 0 12px;
+  flex: 1 0 auto;
+  max-width: 640px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 12px 12px 96px 12px; // Folga inferior para barras fixas de sacola e checkout
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
+
+  &.pz-tracking-container {
+    max-width: 640px;
+  }
+}
+
+// No tracking não há barra fixa inferior, reduzimos o padding inferior
+.pz-public-shell.pz-tracking-shell .pz-public-container {
+  padding-bottom: 24px;
 }
 
 .pz-public-controls {
@@ -4270,6 +4318,7 @@ mat-button-toggle-group {
   margin-top: 12px;
 }
 
+// Barra fixa de sacola no rodapé (Menu Público)
 .pz-sticky-cart {
   position: fixed;
   bottom: 0;
@@ -4277,33 +4326,220 @@ mat-button-toggle-group {
   right: 0;
   background: #ffffff;
   border-top: 2px solid rgba(198, 40, 40, 0.25);
-  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
-  padding: 12px 16px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  z-index: 50;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.12);
+  padding: 10px 16px;
+  z-index: 100;
+
+  .pz-sticky-cart-content {
+    max-width: 640px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+}
+
+// Barra fixa de finalização no rodapé (Checkout Público)
+.pz-fixed-checkout-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border-top: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.12);
+  padding: 10px 16px;
+  z-index: 100;
+
+  .pz-fixed-bar-content {
+    max-width: 640px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .pz-fixed-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .pz-fixed-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: rgba(0, 0, 0, 0.6);
+    letter-spacing: 0.3px;
+  }
+
+  .pz-fixed-total {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: #c62828;
+    line-height: 1.1;
+  }
+
+  .pz-fixed-sub {
+    font-size: 0.72rem;
+    color: rgba(0, 0, 0, 0.55);
+  }
+
+  .pz-fixed-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .pz-fixed-more-btn {
+    border-radius: 8px;
+    font-weight: 600;
+  }
+
+  .pz-fixed-submit-btn {
+    font-size: 0.95rem;
+    font-weight: 700;
+    padding: 0 18px;
+    height: 44px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  @media (max-width: 600px) {
+    padding: 8px 12px;
+
+    .pz-fixed-total {
+      font-size: 1.15rem;
+    }
+
+    .pz-fixed-more-btn {
+      padding: 0 8px;
+      font-size: 0.82rem;
+    }
+
+    .pz-fixed-submit-btn {
+      padding: 0 12px;
+      font-size: 0.88rem;
+      height: 40px;
+    }
+  }
+}
+
+// Seção de endereço e busca CEP (Checkout)
+.pz-address-section {
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  padding: 14px 12px 4px 12px;
+  margin: 12px 0 16px 0;
+
+  .pz-section-subtitle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+    color: #c62828;
+    font-size: 0.95rem;
+    margin-bottom: 12px;
+
+    mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  .pz-cep-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+
+    .pz-cep-field {
+      max-width: 200px;
+      flex: 1 1 180px;
+    }
+
+    .pz-cep-hint {
+      flex: 2 1 240px;
+      margin-top: -12px;
+      font-size: 0.8rem;
+    }
+  }
+
+  .pz-street-number-row {
+    .pz-street-field {
+      flex: 3 1 240px;
+    }
+
+    .pz-number-field {
+      flex: 1 1 90px;
+      max-width: 140px;
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Card 1 Tracking: Código, Status e Saudação
+// ---------------------------------------------------------------------------
+.pz-tracking-code-card {
+  .pz-code-badge-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
 }
 
 .pz-tracking-big-code {
-  font-size: 2.4rem;
+  font-size: 2.2rem;
   font-weight: 800;
   color: #c62828;
-  margin: 6px 0;
+  letter-spacing: 1.5px;
+  line-height: 1;
+  margin: 4px 0 0 0;
 }
 
+.pz-customer-greet {
+  font-size: 0.95rem;
+  color: rgba(0, 0, 0, 0.75);
+  margin: 8px 0 0 0;
+}
+
+// ---------------------------------------------------------------------------
+// Card 2 Tracking: Progresso do Pedido (Passos)
+// ---------------------------------------------------------------------------
 .pz-tracking-steps {
   display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 10px;
+
+  @media (min-width: 480px) {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 8px;
+  }
 }
 
 .pz-tracking-step {
   display: flex;
   align-items: center;
   gap: 6px;
+  font-size: 0.88rem;
   color: rgba(0, 0, 0, 0.45);
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
 }
 
 .pz-tracking-step.done {
@@ -4316,15 +4552,203 @@ mat-button-toggle-group {
   font-weight: 700;
 }
 
-.pz-two-cols {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 16px;
-}
+// ---------------------------------------------------------------------------
+// Card 3 Tracking e Checkout: Resumo dos Itens, Detalhes e Ações
+// ---------------------------------------------------------------------------
+.pz-sub-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #333333;
+  margin: 0 0 10px 0;
 
-@media (min-width: 960px) {
-  .pz-two-cols {
-    grid-template-columns: 1fr 1fr;
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    color: #c62828;
   }
 }
+
+.pz-card-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pz-items-count-badge {
+  background: #eceff1;
+  color: #455a64;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.pz-scrollable-items {
+  max-height: 280px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.pz-scrollable-cart {
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.pz-public-container .pz-cart-info strong {
+  color: #1e293b;
+}
+
+.pz-public-container .pz-cart-row {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.pz-public-container .pz-detail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 12px 14px;
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+
+  .item-info {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .item-name-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .item-qty-pill {
+    background: #c62828;
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 12px;
+    line-height: 1.2;
+    flex-shrink: 0;
+  }
+
+  .item-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #212121;
+    word-break: break-word;
+  }
+
+  .item-flavors {
+    margin-top: 6px;
+  }
+
+  .flavor-chip {
+    display: inline-block;
+    background: #f1f8e9;
+    color: #2e7d32;
+    border: 1px solid #c8e6c9;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.82rem;
+    font-weight: 500;
+  }
+
+  .pz-item-note {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.82rem;
+    color: #e65100;
+    margin-top: 6px;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+  }
+
+  .item-price {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #212121;
+    white-space: nowrap;
+    margin-left: 12px;
+    flex-shrink: 0;
+  }
+}
+
+.pz-order-meta-box {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin: 14px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  .pz-meta-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.88rem;
+    color: rgba(0, 0, 0, 0.75);
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: #c62828;
+    }
+  }
+}
+
+// Estilização limpa e com alto contraste de Totais nas páginas públicas
+.pz-public-container .pz-totals-bar {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+
+  > div:not(.pz-grand-total),
+  .totals-line {
+    color: #475569 !important;
+
+    strong {
+      color: #0f172a !important;
+    }
+  }
+
+  .pz-grand-total {
+    border-top: 1px dashed #cbd5e1 !important;
+    color: #0f172a !important;
+
+    strong {
+      color: #c62828 !important;
+      font-size: 1.25rem !important;
+      font-weight: 800 !important;
+    }
+  }
+}
+
+.pz-tracking-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+
+  .pz-btn-block {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 

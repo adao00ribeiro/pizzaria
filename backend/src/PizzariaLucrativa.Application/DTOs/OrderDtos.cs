@@ -16,7 +16,8 @@ public sealed record CreateOrderInput(
     string? Notes,
     PaymentMethod? PaymentMethod,
     decimal Discount,
-    IReadOnlyList<CreateOrderItemInput> Items);
+    IReadOnlyList<CreateOrderItemInput> Items,
+    string? DeliveryAddress = null);
 
 /// <summary>
 /// Item do pedido: pizza (SizeId + 1–4 sabores), bebida (sabor único, sem SizeId)
@@ -65,7 +66,12 @@ public sealed record OrderDto(
     DateTime? DeliveredAt,
     DateTime? CancelledAt,
     string? CancelReason,
-    IReadOnlyList<OrderItemDto> Items);
+    IReadOnlyList<OrderItemDto> Items)
+{
+    public string? DeliveryAddress => !string.IsNullOrWhiteSpace(AddressStreet)
+        ? $"{AddressStreet}, {AddressNumber ?? "s/n"}{(string.IsNullOrWhiteSpace(AddressDistrict) ? "" : $" - {AddressDistrict}")}{(string.IsNullOrWhiteSpace(AddressComplement) ? "" : $" ({AddressComplement})")}"
+        : null;
+}
 
 public sealed record OrderItemDto(
     Guid Id,
@@ -229,7 +235,8 @@ public sealed record CreatePublicOrderInput(
     string? AddressComplement,
     string? Notes,
     PaymentMethod? PaymentMethod,
-    IReadOnlyList<CreateOrderItemInput> Items);
+    IReadOnlyList<CreateOrderItemInput> Items,
+    string? DeliveryAddress = null);
 
 /// <summary>
 /// Status público do pedido por código (`GET /public/{slug}/orders/{code}`).
@@ -249,13 +256,22 @@ public sealed record PublicOrderTrackingDto(
     decimal Subtotal,
     decimal DeliveryFee,
     decimal Total,
-    IReadOnlyList<PublicOrderTrackingItemDto> Items);
+    IReadOnlyList<PublicOrderTrackingItemDto> Items,
+    decimal Discount = 0m,
+    string? CustomerFirstName = null,
+    PaymentMethod? PaymentMethod = null,
+    string? Slug = null);
 
 public sealed record PublicOrderTrackingItemDto(
     int Quantity,
     string? SizeName,
     string? ComboName,
-    IReadOnlyList<OrderTicketFlavorDto> Flavors);
+    IReadOnlyList<OrderTicketFlavorDto> Flavors,
+    string? Description = null,
+    decimal UnitPrice = 0m,
+    decimal Total = 0m,
+    string? Notes = null,
+    string? FlavorsLabel = null);
 
 // ================================================================ Relatório de Lucro Real (Sprint 6)
 
