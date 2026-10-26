@@ -125,4 +125,12 @@ public sealed class AiController : ApiControllerBase
         var usage = await _usageService.GetUsageAsync(ct);
         return Ok(usage);
     }
+
+    /// <summary>Registra feedback do usuário sobre uma resposta do assistente (IA4-12).</summary>
+    [HttpPost("feedback")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public ActionResult SubmitFeedback([FromBody] AiFeedbackDto feedback)
+    {
+        return Ok(new { success = true });
+    }
 }

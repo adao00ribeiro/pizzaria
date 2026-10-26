@@ -1,0 +1,177 @@
+<div
+  class="message-bubble-wrapper"
+  [class.is-user]="message().role === 'user'"
+  [class.is-model]="message().role === 'model'"
+  [class.is-error]="message().isError"
+  role="article"
+  [attr.aria-label]="message().role === 'user' ? 'Pergunta do usuário' : 'Resposta do assistente'"
+>
+  <div class="message-avatar">
+    <mat-icon>{{ message().role === 'user' ? 'person' : 'auto_awesome' }}</mat-icon>
+  </div>
+
+  <div class="message-content">
+    <div class="message-header">
+      <span class="sender-name">{{ message().role === 'user' ? 'Você' : 'Assistente IA' }}</span>
+      @if (message().createdAt) {
+        <span class="message-time">{{ formatTime(message().createdAt!) }}</span>
+      }
+      @if (message().meta?.isFallback) {
+        <span class="fallback-chip" matTooltip="Resposta gerada em modo contingência">Modo Seguro</span>
+      }
+    </div>
+
+    @if (message().isPending) {
+      <div class="typing-indicator" aria-label="Assistente pensando">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    } @else if (message().isError) {
+      <div class="error-box">
+        <mat-icon color="warn">error_outline</mat-icon>
+        <span class="error-text">{{ message().errorMessage || 'Falha ao processar a pergunta.' }}</span>
+        <button mat-stroked-button color="warn" type="button" (click)="retry.emit()">
+          <mat-icon>refresh</mat-icon> Tentar novamente
+        </button>
+      </div>
+    } @else {
+      <!-- Texto formatado com segurança -->
+      <div class="text-body">
+        @for (seg of textSegments(); track $index) {
+          @if (seg.type === 'bullet') {
+            <div class="bullet-line">
+              <span class="bullet-dot">•</span>
+              <span class="bullet-content">
+                @for (span of seg.spans; track $index) {
+                  @if (span.bold) {
+                    <strong>{{ span.text }}</strong>
+                  } @else {
+                    <span>{{ span.text }}</span>
+                  }
+                }
+              </span>
+            </div>
+          } @else {
+            <p class="paragraph-line">
+              @for (span of seg.spans; track $index) {
+                @if (span.bold) {
+                  <strong>{{ span.text }}</strong>
+                } @else {
+                  <span>{{ span.text }}</span>
+                }
+              }
+            </p>
+          }
+        }
+      </div>
+
+      <!-- Blocos estruturados da API -->
+      @if (message().blocks; as blocks) {
+        @for (b of blocks; track $index) {
+          @if (b.type === 'kpis' && b.kpis) {
+            <pz-kpi-block [kpis]="b.kpis" />
+          }
+          @if (b.type === 'chart' && b.chart) {
+            <pz-chart-block [spec]="b.chart" />
+          }
+          @if (b.type === 'table' && b.table) {
+            <pz-table-block [table]="b.table" />
+          }
+        }
+      }
+
+      <!-- Metadados de transparência (IA4-09) -->
+      @if (message().meta; as meta) {
+        <div class="meta-section">
+          <button
+            type="button"
+            class="meta-toggle-btn"
+            (click)="showMeta.set(!showMeta())"
+            [attr.aria-expanded]="showMeta()"
+          >
+            <mat-icon class="toggle-icon">{{ showMeta() ? 'expand_less' : 'expand_more' }}</mat-icon>
+            <span>Transparência e dados consultados</span>
+          </button>
+
+          @if (showMeta()) {
+            <div class="meta-details">
+              @if (meta.periodLabel) {
+                <div class="meta-item">
+                  <span class="meta-label">Período:</span>
+                  <span class="meta-val">{{ meta.periodLabel }}</span>
+                </div>
+              }
+              @if (meta.toolsUsed && meta.toolsUsed.length > 0) {
+                <div class="meta-item">
+                  <span class="meta-label">Fontes / Tools:</span>
+                  <span class="meta-val">{{ meta.toolsUsed.join(', ') }}</span>
+                </div>
+              }
+              <div class="meta-item">
+                <span class="meta-label">Latência:</span>
+                <span class="meta-val">{{ meta.latencyMs }} ms</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">Modelo:</span>
+                <span class="meta-val">{{ meta.model }} ({{ meta.provider }})</span>
+              </div>
+              @if (message().usage; as usage) {
+                <div class="meta-item">
+                  <span class="meta-label">Tokens:</span>
+                  <span class="meta-val">{{ usage.inputTokens + usage.outputTokens }}</span>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
+
+      <!-- Ações da mensagem (Copiar e Feedback IA4-12) -->
+      <div class="message-footer">
+        <button
+          mat-button
+          class="action-btn"
+          type="button"
+          (click)="copyText()"
+          matTooltip="Copiar texto"
+          aria-label="Copiar resposta"
+        >
+          <mat-icon>{{ copied() ? 'check' : 'content_copy' }}</mat-icon>
+          <span>{{ copied() ? 'Copiado!' : 'Copiar' }}</span>
+        </button>
+
+        @if (message().role === 'model') {
+          <div class="feedback-actions">
+            @if (feedbackSent()) {
+              <span class="feedback-ack">Obrigado pelo feedback!</span>
+            } @else {
+              <button
+                mat-icon-button
+                class="feedback-btn"
+                type="button"
+                [color]="feedbackGiven() === 'up' ? 'primary' : undefined"
+                (click)="giveFeedback(true)"
+                matTooltip="Resposta útil"
+                aria-label="Resposta útil"
+              >
+                <mat-icon>thumb_up</mat-icon>
+              </button>
+              <button
+                mat-icon-button
+                class="feedback-btn"
+                type="button"
+                [color]="feedbackGiven() === 'down' ? 'warn' : undefined"
+                (click)="giveFeedback(false)"
+                matTooltip="Resposta não foi útil"
+                aria-label="Resposta não foi útil"
+              >
+                <mat-icon>thumb_down</mat-icon>
+              </button>
+            }
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>

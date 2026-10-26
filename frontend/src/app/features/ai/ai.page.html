@@ -1,0 +1,176 @@
+<div class="ai-container" [class.history-open]="historyOpen()">
+  <!-- Barra lateral de histórico (Desktop fixa / Mobile gaveta) -->
+  <div class="history-drawer" [class.mobile-open]="historyOpen()">
+    <pz-ai-history
+      [conversations]="conversations()"
+      [activeId]="currentConversationId()"
+      [loading]="loadingHistory()"
+      (selectConversation)="loadConversation($event)"
+      (newConversation)="newConversation()"
+      (deleteConversation)="deleteConversation($event)"
+    />
+  </div>
+
+  @if (historyOpen()) {
+    <div
+      class="backdrop"
+      (click)="historyOpen.set(false)"
+      aria-label="Fechar histórico"
+    ></div>
+  }
+
+  <!-- Área Principal do Chat -->
+  <main class="chat-main">
+    <!-- Header do Chat -->
+    <header class="chat-header">
+      <div class="header-left">
+        <button
+          mat-icon-button
+          class="history-toggle-btn"
+          type="button"
+          (click)="historyOpen.set(!historyOpen())"
+          matTooltip="Alternar histórico"
+          aria-label="Abrir ou fechar painel de histórico"
+        >
+          <mat-icon>history</mat-icon>
+        </button>
+
+        <div class="header-title-box">
+          <h2 class="header-title">Assistente de Inteligência Artificial</h2>
+          <span class="header-subtitle">
+            Análise e relatórios de pedidos, receitas, regiões e finanças
+          </span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        @if (usage(); as u) {
+          <div
+            class="budget-badge"
+            [class.exceeded]="u.budgetExceeded"
+            [matTooltip]="'Uso mensal: ' + (u.budgetUsedPercentage | number:'1.0-1') + '% do orçamento configurado'"
+          >
+            <mat-icon>bolt</mat-icon>
+            <span class="badge-text">
+              {{ u.monthlyCostUsd | currency:'USD':'symbol':'1.2-2' }} / {{ u.monthlyBudgetUsd | currency:'USD':'symbol':'1.0-0' }}
+            </span>
+          </div>
+        }
+
+        <button
+          mat-stroked-button
+          color="primary"
+          type="button"
+          (click)="newConversation()"
+          matTooltip="Limpar tela e iniciar novo diálogo"
+        >
+          <mat-icon>add</mat-icon>
+          <span class="hide-mobile">Nova conversa</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Área de Mensagens com Rolagem -->
+    <div class="messages-viewport" #messagesViewport>
+      @if (messages().length === 0) {
+        <div class="empty-chat-hero">
+          <div class="hero-icon-wrapper">
+            <mat-icon>auto_awesome</mat-icon>
+          </div>
+          <h3 class="hero-title">Como posso te ajudar hoje?</h3>
+          <p class="hero-desc">
+            Faça perguntas em linguagem natural sobre as vendas da sua pizzaria, compare períodos,
+            veja a rentabilidade de produtos ou confira gráficos de entrega por região.
+          </p>
+
+          <!-- Chips de Sugestão -->
+          @if (suggestions().length > 0) {
+            <div class="suggestions-container">
+              <span class="suggestions-label">Perguntas frequentes sugeridas:</span>
+              <div class="chips-grid">
+                @for (sug of suggestions(); track sug) {
+                  <button
+                    type="button"
+                    class="suggestion-chip"
+                    (click)="send(sug)"
+                    [disabled]="loading()"
+                  >
+                    <mat-icon class="chip-icon">help_outline</mat-icon>
+                    <span>{{ sug }}</span>
+                  </button>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="messages-list">
+          @for (msg of messages(); track $index) {
+            <pz-chat-message
+              [message]="msg"
+              (retry)="retry()"
+            />
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Sugestões compactas flutuantes se tiver conversa ativa -->
+    @if (messages().length > 0 && suggestions().length > 0 && !loading()) {
+      <div class="inline-suggestions">
+        @for (sug of suggestions().slice(0, 3); track sug) {
+          <button
+            type="button"
+            class="mini-chip"
+            (click)="send(sug)"
+          >
+            {{ sug }}
+          </button>
+        }
+      </div>
+    }
+
+    <!-- Composer Inferior -->
+    <footer class="chat-composer-area">
+      @if (error()) {
+        <div class="error-banner">
+          <mat-icon>warning</mat-icon>
+          <span>{{ error() }}</span>
+        </div>
+      }
+
+      <div class="composer-box" [class.loading]="loading()">
+        <textarea
+          #messageInput
+          class="composer-textarea"
+          rows="1"
+          placeholder="Pergunte algo sobre vendas, bairros, produtos, taxas ou lucro... (Enter para enviar, Shift+Enter para nova linha)"
+          [disabled]="loading()"
+          [(ngModel)]="inputText"
+          (keydown)="onKeydown($event)"
+          aria-label="Campo de mensagem para o assistente"
+        ></textarea>
+
+        <button
+          mat-mini-fab
+          color="primary"
+          class="send-btn"
+          type="button"
+          (click)="submit()"
+          [disabled]="loading() || !canSend()"
+          aria-label="Enviar mensagem"
+        >
+          @if (loading()) {
+            <mat-spinner diameter="18" color="accent" />
+          } @else {
+            <mat-icon>send</mat-icon>
+          }
+        </button>
+      </div>
+
+      <p class="chat-disclaimer">
+        O Assistente de IA analisa as métricas da operação em tempo real. Sempre confirme decisões financeiras críticas no painel de Lucro Real.
+      </p>
+    </footer>
+  </main>
+</div>

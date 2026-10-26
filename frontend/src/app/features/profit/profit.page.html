@@ -8,6 +8,17 @@
     </div>
 
     <div class="header-actions">
+      <a
+        mat-stroked-button
+        color="primary"
+        routerLink="/ia"
+        [queryParams]="{ q: 'Explique o lucro deste período' }"
+        matTooltip="Fazer perguntas e analisar este período com a IA"
+      >
+        <mat-icon>auto_awesome</mat-icon>
+        Perguntar à IA
+      </a>
+
       <mat-button-toggle-group
         [value]="preset()"
         (change)="selectPreset($event.value)"

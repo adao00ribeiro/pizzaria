@@ -2,7 +2,7 @@
 
 > **Feature:** Assistente de IA sobre os dados (Gemini)
 > **Duração:** 2 semanas · **Capacidade:** 27 pontos
-> **Status:** ⬜ Planejado
+> **Status:** ✅ Concluída
 > **Depende de:** IA-3 (chat, histórico e contrato HTTP estáveis)
 > **Habilita:** IA-5 (hardening e release)
 
@@ -39,7 +39,7 @@ devolvido pela API e retoma conversas salvas pelo backend.
 
 ### Onda 1 — Modelos e comunicação
 
-- [ ] **IA4-01** — Criar `core/models/ai.models.ts` espelhando exatamente os DTOs da API:
+- [x] **IA4-01** — Criar `core/models/ai.models.ts` espelhando exatamente os DTOs da API:
   `ChatRequest` (com `conversationId?`), `ChatMessage`, `ChatAnswer`, `AnswerBlock`
   (`text|chart|table|kpis`), `ChartSpec`, `ChartSeries`, `TableBlock`, `KpiBlock`, `AiMeta`,
   `ConversationSummary`, `ConversationDetail`, `ConversationMessage`, `AiUsage`.
@@ -47,7 +47,7 @@ devolvido pela API e retoma conversas salvas pelo backend.
   **Entregável:** `frontend/src/app/core/models/ai.models.ts`.
   **Aceite:** sem `any`; nomes camelCase iguais ao JSON; `kind`/`valueFormat` como unions tipadas.
 
-- [ ] **IA4-02** — Criar `features/ai/ai.service.ts`:
+- [x] **IA4-02** — Criar `features/ai/ai.service.ts`:
   `chat(message, conversationId?)`, `suggestions()`, `health()`,
   `listConversations()`, `getConversation(id)`, `deleteConversation(id)` e `usage()`,
   com `HttpClient` + `inject()`, `environment.apiBaseUrl` e tratamento de erro.
@@ -55,7 +55,7 @@ devolvido pela API e retoma conversas salvas pelo backend.
   **Entregável:** `frontend/src/app/features/ai/ai.service.ts`.
   **Aceite:** nenhuma URL montada no componente; tipagem estrita; erro HTTP propagado de forma tratável.
 
-- [ ] **IA4-03** — Criar o estado da conversa com Signals:
+- [x] **IA4-03** — Criar o estado da conversa com Signals:
   `messages`, `conversations`, `currentConversationId`, `loading`, `loadingHistory`, `error`,
   `suggestions`; métodos `send`, `loadConversation`, `newConversation`, `deleteConversation`,
   `retry` e `clear`.
@@ -66,7 +66,7 @@ devolvido pela API e retoma conversas salvas pelo backend.
 
 ### Onda 2 — Componentes de resposta
 
-- [ ] **IA4-04** — Criar `ChartBlockComponent`:
+- [x] **IA4-04** — Criar `ChartBlockComponent`:
   recebe `ChartSpec`, registra Chart.js e renderiza com `ng2-charts`; suporta `bar`, `line`,
   `pie` e `doughnut`; formata eixo/tooltip conforme `valueFormat` (`currency`, `number`, `percent`);
   trata lista vazia com estado “sem dados”.
@@ -75,14 +75,14 @@ devolvido pela API e retoma conversas salvas pelo backend.
   **Aceite:** gráfico reproduz exatamente labels/séries da API; responsivo; sem recriar o gráfico
   a cada ciclo de change detection; legenda e cores legíveis.
 
-- [ ] **IA4-05** — Criar `TableBlockComponent` e `KpiBlockComponent`:
+- [x] **IA4-05** — Criar `TableBlockComponent` e `KpiBlockComponent`:
   tabela Material com colunas/linhas da API e cards de KPI com `BrlPipe`/`PctPipe`.
   **Agente:** `frontend-specialist`.
   **Entregável:** componentes em `features/ai/`.
   **Aceite:** valores formatados em PT-BR; tabela com scroll horizontal no mobile; sem `innerHTML`
   para conteúdo da API.
 
-- [ ] **IA4-06** — Criar `ChatMessageComponent`:
+- [x] **IA4-06** — Criar `ChatMessageComponent`:
   bolha do usuário/assistente, timestamp, indicador “digitando”, botão copiar e estado de erro
   com retry; renderização de texto seguro (parágrafos/negrito/lista) sem `innerHTML` cru.
   **Agente:** `frontend-specialist`.
@@ -90,7 +90,7 @@ devolvido pela API e retoma conversas salvas pelo backend.
   **Aceite:** texto malicioso da API/usuário não executa HTML; links externos com `rel="noopener"`;
   acessível por leitor de tela.
 
-- [ ] **IA4-07** — Criar o painel de histórico `ai-history.component`:
+- [x] **IA4-07** — Criar o painel de histórico `ai-history.component`:
   lista de conversas (título/data), destaque da atual, botão “Nova conversa”, ação de excluir
   com confirmação, estado vazio e carregamento.
   **Agente:** `frontend-specialist`.
@@ -98,7 +98,7 @@ devolvido pela API e retoma conversas salvas pelo backend.
   **Aceite:** consome `GET/DELETE /ai/conversations`; não mostra conversa de outro tenant;
   exclusão remove da lista sem quebrar o chat; acessível por teclado.
 
-- [ ] **IA4-08** — Criar a página `ai.page`:
+- [x] **IA4-08** — Criar a página `ai.page`:
   cabeçalho “Assistente IA”, sidebar de histórico, chips de sugestão, lista de mensagens,
   composer com `textarea` (Enter envia, Shift+Enter quebra linha), botão nova conversa
   e aviso de que a IA pode errar.
@@ -107,7 +107,7 @@ devolvido pela API e retoma conversas salvas pelo backend.
   **Aceite:** estados loading/erro/vazio/limite; scroll automático para a última mensagem;
   composer desabilitado durante request; histórico visível em desktop e colapsável no mobile.
 
-- [ ] **IA4-09** — Exibir metadados de transparência:
+- [x] **IA4-09** — Exibir metadados de transparência:
   período consultado, tools usadas, uso/custo estimado e botão “Ver dados” que abre a tabela
   quando existir; nunca exibir o prompt interno.
   **Agente:** `frontend-specialist`.
@@ -116,27 +116,27 @@ devolvido pela API e retoma conversas salvas pelo backend.
 
 ### Onda 3 — Integração, rotas e UX
 
-- [ ] **IA4-10** — Adicionar rota `/ia` em `app.routes.ts` com `roleGuard('owner')` e `tenantGuard`;
+- [x] **IA4-10** — Adicionar rota `/ia` em `app.routes.ts` com `roleGuard('owner')` e `tenantGuard`;
   item “Assistente IA” no menu do shell (ícone `auto_awesome`), visível só para owner.
   **Agente:** `frontend-specialist`.
   **Entregável:** `app.routes.ts` + `shell.component.ts`.
   **Aceite:** atendente/pizzaiolo não veem o item e recebem redirecionamento/403 coerente;
   rota carregada com lazy loading.
 
-- [ ] **IA4-11** — Adicionar atalho “Perguntar à IA” na página `/lucro`, levando para `/ia`
+- [x] **IA4-11** — Adicionar atalho “Perguntar à IA” na página `/lucro`, levando para `/ia`
   com uma pergunta pré-preenchida (ex.: “Explique o lucro deste período”).
   **Agente:** `frontend-specialist`.
   **Entregável:** botão + query param ou estado de navegação.
   **Aceite:** abre o chat com a pergunta pronta, sem disparar duas requisições.
 
-- [ ] **IA4-12** — Implementar feedback do usuário:
+- [x] **IA4-12** — Implementar feedback do usuário:
   botões “Resposta útil / Não foi útil” e campo opcional de comentário, enviando para endpoint
   de telemetria (ou log no backend) sem PII.
   **Agente:** `frontend-specialist` (apoio: `backend-specialist` para endpoint).
   **Entregável:** UI de feedback + `POST /ai/feedback` (se aprovado na sprint).
   **Aceite:** feedback não bloqueia o chat; se endpoint não existir, botão fica oculto.
 
-- [ ] **IA4-13** — Responsividade e acessibilidade:
+- [x] **IA4-13** — Responsividade e acessibilidade:
   testar 375 px, 768 px e desktop; navegação por teclado; `aria-live` para novas respostas;
   contraste AA; foco visível; `prefers-reduced-motion`.
   **Agente:** `frontend-specialist`.
@@ -146,7 +146,7 @@ devolvido pela API e retoma conversas salvas pelo backend.
 
 ### Onda 4 — Cadastro de bairros, testes, documentação e aceite
 
-- [ ] **IA4-14** — Criar a tela “Bairros e regiões” em `features/neighborhoods`
+- [x] **IA4-14** — Criar a tela “Bairros e regiões” em `features/neighborhoods`
   (tabela + dialog), acessível em Cadastros para owner:
   listar, criar, editar, ativar/desativar e excluir bairro; campos `Name`, `Region`.
   **Agente:** `frontend-specialist`.
@@ -154,14 +154,14 @@ devolvido pela API e retoma conversas salvas pelo backend.
   **Aceite:** CRUD consome `/api/v1/neighborhoods`; duplicidade exibe erro amigável;
   `Region` em PT-BR; estados de loading/erro/vazio; sem `any`.
 
-- [ ] **IA4-15** — Criar testes de unidade do frontend (Karma/Jasmine):
+- [x] **IA4-15** — Criar testes de unidade do frontend (Karma/Jasmine):
   `AiService` (URL, payload, erro, histórico), `ChartSpec` → configuração do Chart.js e
   formatação de valores; `NeighborhoodsService` (CRUD e erro).
   **Agente:** `frontend-specialist` (apoio: `qa-test-specialist`).
   **Entregável:** `*.spec.ts` dos services/componentes críticos.
   **Aceite:** `npm test -- --watch=false` verde (ou comando equivalente do projeto).
 
-- [ ] **IA4-16** — Executar aceite visual/funcional com o seed demo:
+- [x] **IA4-16** — Executar aceite visual/funcional com o seed demo:
   lucro do mês, gráfico por região, produto, canal, erro de rede, resposta sem dados,
   retomar conversa após reload, excluir conversa e CRUD de bairros.
   **Agente:** `qa-test-specialist` (apoio: `frontend-specialist`).
@@ -169,7 +169,7 @@ devolvido pela API e retoma conversas salvas pelo backend.
   **Aceite:** todos os cenários aprovados em desktop e mobile; histórico persiste após reload;
   nenhum gráfico vazio indevido.
 
-- [ ] **IA4-17** — Atualizar `docs/08-frontend-angular.md` com a feature, rotas, histórico,
+- [x] **IA4-17** — Atualizar `docs/08-frontend-angular.md` com a feature, rotas, histórico,
   componentes e padrões de renderização segura de resposta; atualizar `docs/07-api.md` com o
   contrato de histórico e o CRUD de bairros.
   **Agente:** `project-organizer`.
@@ -177,7 +177,7 @@ devolvido pela API e retoma conversas salvas pelo backend.
   **Aceite:** caminhos de arquivo corretos; exemplos de `ChartSpec` e de conversa; sem referência
   a componente inexistente.
 
-- [ ] **IA4-18** — Aceite da sprint e handoff para IA-5.
+- [x] **IA4-18** — Aceite da sprint e handoff para IA-5.
   **Agente:** `orchestrator`.
   **Entregável:** relatório com build Angular, testes, checklist de UX e pendências.
   **Aceite:** `npm run build` verde; rota `/ia` funcional contra o backend local; sem regressão
@@ -240,11 +240,11 @@ flowchart TD
 
 ## Checklist de encerramento
 
-- [ ] IA4-01 a IA4-18 concluídas.
-- [ ] Build Angular verde.
-- [ ] Aceite visual em desktop e mobile.
-- [ ] Histórico persistido, retomável e deletável na UI.
-- [ ] CRUD de bairros/regiões integrado ao backend.
-- [ ] Nenhum `innerHTML` com conteúdo da API.
-- [ ] `docs/07` e `docs/08` atualizados.
-- [ ] Handoff publicado para IA-5.
+- [x] IA4-01 a IA4-18 concluídas.
+- [x] Build Angular verde.
+- [x] Aceite visual em desktop e mobile.
+- [x] Histórico persistido, retomável e deletável na UI.
+- [x] CRUD de bairros/regiões integrado ao backend.
+- [x] Nenhum `innerHTML` com conteúdo da API.
+- [x] `docs/07` e `docs/08` atualizados.
+- [x] Handoff publicado para IA-5.

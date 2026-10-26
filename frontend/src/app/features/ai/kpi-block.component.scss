@@ -1,0 +1,30 @@
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.kpi-card {
+  display: flex;
+  flex-direction: column;
+  padding: 14px 16px;
+  background: var(--mat-card-container-color, #ffffff);
+  border: 1px solid var(--mat-divider-color, rgba(0, 0, 0, 0.08));
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+}
+
+.kpi-label {
+  font-size: 0.8rem;
+  color: var(--mat-sys-on-surface-variant, #757575);
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.kpi-value {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--mat-sys-on-surface, #1e1e1e);
+  letter-spacing: -0.02em;
+}

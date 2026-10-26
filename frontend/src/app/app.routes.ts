@@ -25,6 +25,8 @@ export const routes: Routes = [
       { path: 'kitchen', redirectTo: 'producao', pathMatch: 'full' },
       { path: 'lucro', canActivate: [roleGuard('owner')], loadComponent: () => import('./features/profit/profit.page').then(m => m.ProfitPage) },
       { path: 'profit', redirectTo: 'lucro', pathMatch: 'full' },
+      { path: 'ia', canActivate: [roleGuard('owner'), tenantGuard], loadComponent: () => import('./features/ai/ai.page').then(m => m.AiPage) },
+      { path: 'neighborhoods', canActivate: [roleGuard('owner'), tenantGuard], loadComponent: () => import('./features/neighborhoods/neighborhoods.page').then(m => m.NeighborhoodsPage) },
       { path: 'ingredients', canActivate: [roleGuard('owner')], loadComponent: () => import('./features/ingredients/ingredients.page').then(m => m.IngredientsPage) },
       { path: 'preparations', canActivate: [roleGuard('owner')], loadComponent: () => import('./features/preparations/preparations.page').then(m => m.PreparationsPage) },
       { path: 'fixed-costs', canActivate: [roleGuard('owner')], loadComponent: () => import('./features/fixed-costs/fixed-costs.page').then(m => m.FixedCostsPage) },

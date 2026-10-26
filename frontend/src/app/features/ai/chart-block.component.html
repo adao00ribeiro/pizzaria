@@ -1,0 +1,23 @@
+<div class="chart-container" [class.is-pie]="isCircular()">
+  @if (spec(); as s) {
+    <div class="chart-header">
+      <h4 class="chart-title">{{ s.title }}</h4>
+    </div>
+
+    @if (hasData()) {
+      <div class="chart-wrapper">
+        <canvas
+          baseChart
+          [data]="chartData()"
+          [options]="chartOptions()"
+          [type]="chartType()"
+        ></canvas>
+      </div>
+    } @else {
+      <div class="chart-empty">
+        <span class="empty-icon">📊</span>
+        <p>Nenhum dado numérico disponível para visualização.</p>
+      </div>
+    }
+  }
+</div>

@@ -1,0 +1,280 @@
+.message-bubble-wrapper {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  max-width: 100%;
+
+  &.is-user {
+    flex-direction: row-reverse;
+
+    .message-content {
+      background: #eff6ff;
+      border-color: #bfdbfe;
+      margin-left: 48px;
+    }
+
+    .message-avatar {
+      background: #2563eb;
+      color: #ffffff;
+    }
+
+    .message-header {
+      justify-content: flex-end;
+    }
+  }
+
+  &.is-model {
+    .message-content {
+      background: #ffffff;
+      border-color: rgba(0, 0, 0, 0.08);
+      margin-right: 48px;
+    }
+
+    .message-avatar {
+      background: #7c3aed;
+      color: #ffffff;
+    }
+  }
+
+  &.is-error {
+    .message-content {
+      background: #fef2f2;
+      border-color: #fecaca;
+    }
+  }
+}
+
+.message-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+}
+
+.message-content {
+  flex: 1;
+  border: 1px solid;
+  border-radius: 16px;
+  padding: 14px 18px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  overflow: hidden;
+}
+
+.message-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 0.8rem;
+}
+
+.sender-name {
+  font-weight: 600;
+  color: var(--mat-sys-on-surface, #1e1e1e);
+}
+
+.message-time {
+  color: var(--mat-sys-on-surface-variant, #888888);
+}
+
+.fallback-chip {
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+.text-body {
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--mat-sys-on-surface, #262626);
+  word-break: break-word;
+
+  .paragraph-line {
+    margin: 0 0 8px 0;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  .bullet-line {
+    display: flex;
+    gap: 8px;
+    margin: 4px 0;
+
+    .bullet-dot {
+      color: #7c3aed;
+      font-weight: bold;
+    }
+  }
+}
+
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 0;
+
+  span {
+    width: 8px;
+    height: 8px;
+    background: #7c3aed;
+    border-radius: 50%;
+    animation: bounce 1.4s infinite ease-in-out both;
+
+    &:nth-child(1) {
+      animation-delay: -0.32s;
+    }
+    &:nth-child(2) {
+      animation-delay: -0.16s;
+    }
+  }
+}
+
+@keyframes bounce {
+  0%, 80%, 100% {
+    transform: scale(0);
+  }
+  40% {
+    transform: scale(1);
+  }
+}
+
+.error-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 8px 0;
+
+  .error-text {
+    font-size: 0.9rem;
+    color: #b91c1c;
+    flex: 1;
+  }
+}
+
+.meta-section {
+  margin-top: 14px;
+  border-top: 1px dashed rgba(0, 0, 0, 0.1);
+  padding-top: 8px;
+}
+
+.meta-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  padding: 2px 0;
+  cursor: pointer;
+  font-size: 0.78rem;
+  color: var(--mat-sys-on-surface-variant, #666666);
+
+  &:hover {
+    color: #7c3aed;
+  }
+
+  .toggle-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.meta-details {
+  margin-top: 6px;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 8px;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.75rem;
+
+  .meta-item {
+    display: flex;
+    gap: 6px;
+
+    .meta-label {
+      font-weight: 600;
+      color: #666666;
+    }
+
+    .meta-val {
+      color: #333333;
+    }
+  }
+}
+
+.message-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.action-btn {
+  font-size: 0.75rem;
+  height: 28px;
+  line-height: 28px;
+  padding: 0 8px;
+  color: #666666;
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    margin-right: 4px;
+  }
+}
+
+.feedback-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  .feedback-btn {
+    width: 28px;
+    height: 28px;
+    line-height: 28px;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+  }
+
+  .feedback-ack {
+    font-size: 0.75rem;
+    color: #16a34a;
+    font-weight: 500;
+  }
+}
+
+@media (max-width: 600px) {
+  .message-bubble-wrapper {
+    &.is-user .message-content {
+      margin-left: 12px;
+    }
+    &.is-model .message-content {
+      margin-right: 12px;
+    }
+  }
+}

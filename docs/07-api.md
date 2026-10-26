@@ -531,3 +531,28 @@ atingido, a API responde de forma segura (sem números) e registra `AiUsageRecor
 #### Tratamento de Erros e Contingência
 - Erros 429 (TooManyRequests) e 5xx (Google API): O cliente HTTP possui retry automático de até 2 tentativas com backoff exponencial. Se o provedor permanecer indisponível ou estourar o timeout (25s), o backend responde com fallback seguro e orientações de reformulação, sem jamais emitir dados financeiros alucinados.
 
+### 22.4 Endpoints de Histórico e Feedback da IA
+
+| Método | Rota | Descrição |
+|---|---|---|
+| `GET` | `/api/v1/ai/conversations?includeArchived=false` | Lista resumos de conversas anteriores do tenant |
+| `GET` | `/api/v1/ai/conversations/{id}` | Retorna detalhes e histórico de mensagens da conversa |
+| `DELETE` | `/api/v1/ai/conversations/{id}` | Exclui conversa e mensagens associadas do tenant |
+| `POST` | `/api/v1/ai/feedback` | Registra telemetria de feedback do usuário (`helpful`, `comment`) sem PII |
+
+---
+
+## 23. Catálogo de Bairros e Regiões (`/api/v1/neighborhoods`)
+
+Restrito ao `owner`. Permite o gerenciamento geográfico da cidade dividido nas macro-regiões:
+`Center` (Centro), `North` (Zona Norte), `South` (Zona Sul), `East` (Zona Leste), `West` (Zona Oeste) e `Other` (Outra).
+
+| Método | Rota | Descrição |
+|---|---|---|
+| `GET` | `/api/v1/neighborhoods?activeOnly=true` | Lista bairros cadastrados |
+| `GET` | `/api/v1/neighborhoods/{id}` | Detalhes de um bairro |
+| `POST` | `/api/v1/neighborhoods` | Cria novo bairro (`name`, `region`, `isActive`) |
+| `PUT` | `/api/v1/neighborhoods/{id}` | Atualiza nome, região ou ativação |
+| `DELETE` | `/api/v1/neighborhoods/{id}` | Exclui bairro do catálogo |
+
+

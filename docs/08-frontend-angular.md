@@ -202,3 +202,25 @@ export interface PricingResult {
   - Acento: branco/creme, fundo claro
 - Density: `comfortable`; tipografia: Roboto.
 - Ícones Material Symbols.
+
+---
+
+## 8. Assistente de IA e Catálogo Geográfico (Sprint IA-4)
+
+### 8.1 Assistente de IA (`/ia` — restrito ao `owner`)
+- **Rota e Proteção**: `/ia`, protegida por `roleGuard('owner')` e `tenantGuard`.
+- **Componentes**:
+  - `AiPage` (`features/ai/ai.page.ts`): container principal com cabeçalho, sugestões, lista de mensagens, composer responsivo (Enter envia, Shift+Enter quebra linha) e badge de orçamento.
+  - `AiHistoryComponent` (`features/ai/ai-history.component.ts`): sidebar de histórico (fixa em desktop, gaveta no mobile), com listagem, criação de novas conversas e exclusão com diálogo de confirmação.
+  - `ChatMessageComponent` (`features/ai/chat-message.component.ts`): bolhas de mensagem do usuário e da IA, timestamp, indicador de digitação, renderização segura de texto (sem `innerHTML` cru) e metadados de transparência (latência, tools usadas, custo em tokens). Suporte a feedback positivo/negativo.
+  - `ChartBlockComponent` (`features/ai/chart-block.component.ts`): renderização de gráficos Chart.js (`bar`, `line`, `pie`, `doughnut`) a partir de `ChartSpecDto`, com formatação de moeda BRL, percentual e números inteiros.
+  - `TableBlockComponent` (`features/ai/table-block.component.ts`): tabelas responsivas de dados com scroll horizontal.
+  - `KpiBlockComponent` (`features/ai/kpi-block.component.ts`): cards destacados com formatação monetária e percentual.
+- **Atalho no Lucro Real**: atalho "Perguntar à IA" na página `/lucro` direciona para `/ia?q=Explique+o+lucro+deste+período`.
+
+### 8.2 Bairros e Regiões (`/neighborhoods` — restrito ao `owner`)
+- **Rota e Proteção**: `/neighborhoods`, protegida por `roleGuard('owner')` e `tenantGuard`.
+- **Componentes**:
+  - `NeighborhoodsPage` (`features/neighborhoods/neighborhoods.page.ts`): tabela de bairros com chips de região em PT-BR (Centro, Zona Norte, Zona Sul, Zona Leste, Zona Oeste, Outra), status ativo/inativo e ações de edição/exclusão.
+  - `NeighborhoodFormDialog` (`features/neighborhoods/neighborhood-form.dialog.ts`): diálogo reativo para criação e edição com tratamento amigável de duplicidade.
+

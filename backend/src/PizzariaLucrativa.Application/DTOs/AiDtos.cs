@@ -9,6 +9,11 @@ namespace PizzariaLucrativa.Application.DTOs;
 
 public sealed record ChatRequestDto(string Message, Guid? ConversationId = null);
 
+public sealed record AiFeedbackDto(
+    Guid? MessageId,
+    bool Helpful,
+    string? Comment = null);
+
 /// <summary>Mensagem trocada com o assistente (também usada pelo store de histórico).</summary>
 public sealed record ChatMessageDto(
     AiMessageRole Role,

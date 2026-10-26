@@ -74,6 +74,7 @@ export class ShellComponent {
     { path: '/producao', label: 'Produção / Cozinha', icon: 'outdoor_grill', roles: ['owner', 'pizzaiolo'] },
     { path: '/stock', label: 'Estoque', icon: 'inventory_2', roles: ['owner', 'pizzaiolo'] },
     { path: '/lucro', label: 'Lucro Real', icon: 'trending_up', roles: ['owner'] },
+    { path: '/ia', label: 'Assistente IA', icon: 'auto_awesome', roles: ['owner'] },
   ];
 
   /** Seção 3: Cardápio e precificação (gestão de produtos, combos e fichas técnicas). */
@@ -89,6 +90,7 @@ export class ShellComponent {
     { path: '/ingredients', label: 'Ingredientes', icon: 'shopping_basket' },
     { path: '/preparations', label: 'Preparos', icon: 'kitchen' },
     { path: '/products', label: 'Produtos & Tamanhos', icon: 'restaurant_menu' },
+    { path: '/neighborhoods', label: 'Bairros & Regiões', icon: 'location_on', roles: ['owner'] },
     { path: '/fixed-costs', label: 'Custos fixos', icon: 'account_balance_wallet' },
     { path: '/fees', label: 'Taxas', icon: 'percent' },
     { path: '/team', label: 'Equipe', icon: 'group', roles: ['owner'] },

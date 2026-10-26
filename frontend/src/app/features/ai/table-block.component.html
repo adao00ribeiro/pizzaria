@@ -1,0 +1,37 @@
+<div class="table-container">
+  @if (table(); as t) {
+    @if (t.title) {
+      <div class="table-header">
+        <h4 class="table-title">{{ t.title }}</h4>
+      </div>
+    }
+
+    <div class="table-responsive">
+      <table class="pz-custom-table" role="table">
+        <thead>
+          <tr role="row">
+            @for (col of t.columns; track col) {
+              <th scope="col" role="columnheader">{{ col }}</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of t.rows; track $index) {
+            <tr role="row">
+              @for (cell of row; track $index) {
+                <td role="cell">{{ cell }}</td>
+              }
+            </tr>
+          }
+          @if (t.rows.length === 0) {
+            <tr>
+              <td [attr.colspan]="t.columns.length" class="empty-cell">
+                Nenhum registro encontrado.
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

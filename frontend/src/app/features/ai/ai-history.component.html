@@ -1,0 +1,67 @@
+<aside class="history-panel" aria-label="Histórico de conversas com IA">
+  <div class="history-header">
+    <div class="title-with-icon">
+      <mat-icon>history</mat-icon>
+      <h3 class="panel-title">Conversas</h3>
+    </div>
+    <button
+      mat-flat-button
+      color="primary"
+      class="new-chat-btn"
+      type="button"
+      (click)="newConversation.emit()"
+      aria-label="Iniciar nova conversa"
+    >
+      <mat-icon>add</mat-icon>
+      <span>Nova conversa</span>
+    </button>
+  </div>
+
+  <div class="history-list-area">
+    @if (loading()) {
+      <div class="history-loading">
+        <mat-spinner diameter="24" />
+        <span>Carregando histórico...</span>
+      </div>
+    } @else if (conversations().length === 0) {
+      <div class="history-empty">
+        <mat-icon class="empty-icon">chat_bubble_outline</mat-icon>
+        <p>Nenhuma conversa anterior salva.</p>
+      </div>
+    } @else {
+      <div class="conversations-list" role="list">
+        @for (item of conversations(); track item.id) {
+          <div
+            class="conversation-item"
+            [class.active]="item.id === activeId()"
+            role="listitem"
+            (click)="selectConversation.emit(item.id)"
+            (keydown.enter)="selectConversation.emit(item.id)"
+            tabindex="0"
+          >
+            <div class="item-main">
+              <mat-icon class="item-icon">chat</mat-icon>
+              <div class="item-text">
+                <span class="item-title" [title]="item.title">{{ item.title }}</span>
+                <span class="item-sub">
+                  {{ formatDate(item.updatedAt) }} · {{ item.messageCount }} msgs
+                </span>
+              </div>
+            </div>
+
+            <button
+              mat-icon-button
+              class="delete-btn"
+              type="button"
+              (click)="onDelete($event, item)"
+              matTooltip="Excluir conversa"
+              aria-label="Excluir conversa"
+            >
+              <mat-icon>delete_outline</mat-icon>
+            </button>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</aside>
