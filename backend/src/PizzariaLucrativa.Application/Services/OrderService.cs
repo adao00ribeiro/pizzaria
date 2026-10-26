@@ -136,7 +136,7 @@ public sealed partial class OrderService : IOrderService
         ValidateShape(input);
 
         var fees = await LoadFeesAsync(ct);
-        var (neighborhoodId, regionSnapshot) = await ResolveNeighborhoodAsync(input.NeighborhoodId, ct);
+        var (neighborhoodId, regionSnapshot) = await ResolveNeighborhoodAsync(input.NeighborhoodId, input.AddressDistrict, ct);
 
         var order = new Order
         {
@@ -746,19 +746,35 @@ public sealed partial class OrderService : IOrderService
     /// enxergar bairro de outro tenant) e congela a região no pedido.
     /// </summary>
     private async Task<(Guid? Id, NeighborhoodRegion? Region)> ResolveNeighborhoodAsync(
-        Guid? neighborhoodId, CancellationToken ct)
+        Guid? neighborhoodId, string? addressDistrict = null, CancellationToken ct = default)
     {
-        if (neighborhoodId is null)
-            return (null, null);
+        if (neighborhoodId.HasValue)
+        {
+            var neighborhood = await _db.FirstOrDefaultAsync(
+                    _db.Set<Neighborhood>().Where(n => n.Id == neighborhoodId.Value), ct)
+                ?? throw new ValidationException("neighborhoodId", "Bairro não encontrado.");
 
-        var neighborhood = await _db.FirstOrDefaultAsync(
-                _db.Set<Neighborhood>().Where(n => n.Id == neighborhoodId.Value), ct)
-            ?? throw new ValidationException("neighborhoodId", "Bairro não encontrado.");
+            if (!neighborhood.IsActive)
+                throw new ValidationException("neighborhoodId", "O bairro informado está desativado.");
 
-        if (!neighborhood.IsActive)
-            throw new ValidationException("neighborhoodId", "O bairro informado está desativado.");
+            return (neighborhood.Id, neighborhood.Region);
+        }
 
-        return (neighborhood.Id, neighborhood.Region);
+        if (!string.IsNullOrWhiteSpace(addressDistrict))
+        {
+            var normalized = addressDistrict.Trim();
+            var neighborhood = await _db.FirstOrDefaultAsync(
+                _db.Set<Neighborhood>().Where(n => n.Name.ToLower() == normalized.ToLower()), ct);
+
+            if (neighborhood != null)
+            {
+                if (!neighborhood.IsActive)
+                    throw new ValidationException("addressDistrict", "O bairro informado está desativado.");
+                return (neighborhood.Id, neighborhood.Region);
+            }
+        }
+
+        return (null, null);
     }
 
     private async Task<Order> FindWithItemsAsync(Guid id, CancellationToken ct)

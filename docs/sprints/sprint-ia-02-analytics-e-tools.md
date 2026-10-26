@@ -2,9 +2,24 @@
 
 > **Feature:** Assistente de IA sobre os dados (Gemini)
 > **Duração:** 2 semanas · **Capacidade:** 24 pontos
-> **Status:** ⬜ Planejado
+> **Status:** ✅ Concluída
 > **Depende de:** IA-1 (contratos e modelo de dados)
 > **Habilita:** IA-3 (Gemini/tools/histórico), IA-4 (frontend)
+
+## Relatório de aceite (IA2-14)
+
+**Data:** 2026-10-26 · **Responsável:** `orchestrator` · **Resultado:** ✅ Aprovada
+
+| Item | Evidência |
+|---|---|
+| Analytics | `IAnalyticsService` + `AnalyticsService` com `GetOrdersByRegionAsync`, `GetOrdersSummaryAsync`, `GetSalesHeatmapAsync`, `ComparePeriodsAsync` |
+| Bairros | `INeighborhoodService` + `NeighborhoodService`, `NeighborhoodsController` CRUD com RBAC OwnerOnly e isolamento por tenant |
+| Período/fuso | `IReportPeriodResolver` + `ReportPeriodResolver`, `IDateTimeProvider` com `America/Sao_Paulo` |
+| Integração pedidos | `OrderService` resolve bairro por `NeighborhoodId` ou `AddressDistrict` e grava `NeighborhoodId`/`RegionSnapshot` |
+| API | `AnalyticsController` com validação de período/limite e proteção OwnerOnly |
+| DI/Registro | Serviços registrados em `Application.DependencyInjection` |
+| Build/Testes | `dotnet build` e `dotnet test` verdes (90 Domain + 39 Api) |
+
 
 ## Objetivo
 
@@ -39,7 +54,7 @@ Esta sprint **não** implementa chat nem chama LLM.
 
 ### Onda 1 — Serviço de analytics (backend)
 
-- [ ] **IA2-01** — Implementar `AnalyticsService.GetOrdersByRegionAsync(period, limit)`:
+- [x] **IA2-01** — Implementar `AnalyticsService.GetOrdersByRegionAsync(period, limit)`:
   agrupar por `RegionSnapshot` (fallback `AddressDistrict` → “Não classificado”),
   retornar `District`, `Region`, `OrdersCount` (todos os pedidos não cancelados),
   `CompletedOrdersCount`, `Revenue` (somente `Completed`), `AverageTicket` e `SharePercentage`.
@@ -48,26 +63,26 @@ Esta sprint **não** implementa chat nem chama LLM.
   **Aceite:** números batem com consulta manual no seed; nenhum pedido cancelado entra em receita;
   `limit` entre 1 e 50; resultado ordenado por `OrdersCount` desc.
 
-- [ ] **IA2-02** — Implementar `GetOrdersSummaryAsync(period)`:
+- [x] **IA2-02** — Implementar `GetOrdersSummaryAsync(period)`:
   contagem por status, tipo (`Counter/Pickup/Delivery`) e forma de pagamento; total de pedidos,
   ticket médio e faturamento concluído.
   **Agente:** `backend-specialist`.
   **Entregável:** mesmo service, DTO `OrdersSummaryDto`.
   **Aceite:** somas dos grupos iguais ao total; pedidos anônimos do site contabilizados como canal público.
 
-- [ ] **IA2-03** — Implementar `GetSalesHeatmapAsync(period)`:
+- [x] **IA2-03** — Implementar `GetSalesHeatmapAsync(period)`:
   pedidos concluídos por dia da semana × faixa horária (0–23h ou blocos de 2h), no fuso local.
   **Agente:** `backend-specialist`.
   **Entregável:** série `SalesHeatmapItemDto`.
   **Aceite:** 7 × N células sempre presentes (inclusive zeros); horário local, não UTC.
 
-- [ ] **IA2-04** — Implementar `ComparePeriodsAsync(periodA, periodB)`:
+- [x] **IA2-04** — Implementar `ComparePeriodsAsync(periodA, periodB)`:
   faturamento, lucro bruto, pedidos e ticket médio, com variação absoluta e percentual.
   **Agente:** `backend-specialist`.
   **Entregável:** DTO de comparação e reutilização de `IReportService`.
   **Aceite:** divisão por zero tratada (variação nula quando base = 0); períodos validados (máx. 366 dias).
 
-- [ ] **IA2-05** — Implementar `ReportPeriodResolver`:
+- [x] **IA2-05** — Implementar `ReportPeriodResolver`:
   conversão de mês/ano e intervalos (“hoje”, “7 dias”, “30 dias”, “mês passado”, “mês X”)
   de `America/Sao_Paulo` para UTC; início inclusivo e fim exclusivo.
   **Agente:** `backend-specialist`.
@@ -76,7 +91,7 @@ Esta sprint **não** implementa chat nem chama LLM.
 
 ### Onda 2 — Catálogo de bairros e resolução no pedido
 
-- [ ] **IA2-06** — Criar `NeighborhoodsController` (`/api/v1/neighborhoods`) com CRUD
+- [x] **IA2-06** — Criar `NeighborhoodsController` (`/api/v1/neighborhoods`) com CRUD
   (`GET`, `POST`, `PUT`, `DELETE`) restrito a `owner`:
   validação de `Name` obrigatório, `Region` válido, unicidade `TenantId + Name` no serviço
   (TPT) e bloqueio de exclusão de bairro em uso por pedido (ou desativação via `IsActive`).
@@ -85,7 +100,7 @@ Esta sprint **não** implementa chat nem chama LLM.
   **Aceite:** owner cadastra/edita/desativa bairros; duplicidade retorna `409`;
   outro tenant não enxerga nem edita o bairro; exclusão em uso é bloqueada ou desativa.
 
-- [ ] **IA2-07** — Atualizar `OrderService.CreateAsync` (e o fluxo público) para resolver
+- [x] **IA2-07** — Atualizar `OrderService.CreateAsync` (e o fluxo público) para resolver
   `AddressDistrict` no catálogo `Neighborhood` do tenant (trim + case-insensitive) e gravar
   `NeighborhoodId` e `RegionSnapshot`; quando não houver correspondência, manter nulos e
   classificar como “Não classificado” nos relatórios.
@@ -94,7 +109,7 @@ Esta sprint **não** implementa chat nem chama LLM.
   **Aceite:** pedido de delivery com “Centro” grava região `Center`; bairro desconhecido não quebra
   o pedido; pedido de outro tenant não resolve bairro alheio; pedidos antigos continuam válidos.
 
-- [ ] **IA2-08** — Atualizar o seed demo:
+- [x] **IA2-08** — Atualizar o seed demo:
   catálogo de bairros por região (Centro, Jardins, Moema, Tatuapé, Santana, Pinheiros etc.),
   pedidos de delivery distribuídos entre bairros e histórico de pelo menos 3 meses.
   **Agente:** `backend-specialist`.
@@ -104,13 +119,13 @@ Esta sprint **não** implementa chat nem chama LLM.
 
 ### Onda 3 — API, segurança e validação
 
-- [ ] **IA2-09** — Criar `AnalyticsController` (`/api/v1/analytics`) com os endpoints de leitura,
+- [x] **IA2-09** — Criar `AnalyticsController` (`/api/v1/analytics`) com os endpoints de leitura,
   `[Authorize(Policy = "OwnerOnly")]` e versionamento pelo `ApiControllerBase`.
   **Agente:** `backend-specialist`.
   **Entregável:** `Api/Controllers/AnalyticsController.cs`.
   **Aceite:** thin controller; nenhuma regra de negócio; `from/to` validados; `403` para não-owner.
 
-- [ ] **IA2-10** — Aplicar validação de período e payload:
+- [x] **IA2-10** — Aplicar validação de período e payload:
   `from <= to`, intervalo máximo de 366 dias, período padrão de 30 dias,
   `limit` de região entre 1 e 50 e mensagens de erro no envelope padrão.
   **Agente:** `backend-specialist`.
@@ -119,13 +134,13 @@ Esta sprint **não** implementa chat nem chama LLM.
 
 ### Onda 4 — Testes, docs e aceite
 
-- [ ] **IA2-11** — Testes unitários de `ReportPeriodResolver`, cálculo de participação e
+- [x] **IA2-11** — Testes unitários de `ReportPeriodResolver`, cálculo de participação e
   resolução de região (mês por nome, mês passado, 30 dias, virada de ano, fuso, bairro inexistente).
   **Agente:** `qa-test-specialist`.
   **Entregável:** testes no projeto de domínio/application.
   **Aceite:** 100% dos cenários da matriz da IA-1 cobertos; testes determinísticos.
 
-- [ ] **IA2-12** — Testes de integração:
+- [x] **IA2-12** — Testes de integração:
   `GET /analytics/orders/by-region`, `/orders/summary`, `/sales/heatmap`, `/compare`;
   CRUD de bairros (duplicidade e cross-tenant); resolução de região na criação do pedido;
   RBAC (`atendente` → 403); isolamento de tenant; mês com pedido às 22h BRT.
@@ -134,13 +149,13 @@ Esta sprint **não** implementa chat nem chama LLM.
   `NeighborhoodTests.cs`.
   **Aceite:** `dotnet test` verde; nenhum teste depende de rede/provedor externo.
 
-- [ ] **IA2-13** — Atualizar `docs/05-modelo-de-dados.md` (bairro/região) e
+- [x] **IA2-13** — Atualizar `docs/05-modelo-de-dados.md` (bairro/região) e
   `docs/07-api.md` (endpoints de analytics e CRUD de bairros) com exemplos reais.
   **Agente:** `project-organizer`.
   **Entregável:** docs sincronizados com os contratos.
   **Aceite:** exemplos executáveis contra o seed; sem referência a endpoint inexistente.
 
-- [ ] **IA2-14** — Aceite da sprint e handoff para IA-3.
+- [x] **IA2-14** — Aceite da sprint e handoff para IA-3.
   **Agente:** `orchestrator`.
   **Entregável:** relatório de aceite com build, testes, endpoints e formatos de saída.
   **Aceite:** métricas e catálogo prontos para serem consumidos pelas tools; contrato de saída congelado.
@@ -200,8 +215,8 @@ flowchart TD
 
 ## Checklist de encerramento
 
-- [ ] IA2-01 a IA2-14 concluídas.
-- [ ] Gráfico por região com pelo menos 5 bairros no seed.
-- [ ] CRUD de bairros/regiões validado e protegido por tenant.
-- [ ] Build e suíte de testes verdes.
-- [ ] Handoff publicado para IA-3.
+- [x] IA2-01 a IA2-14 concluídas.
+- [x] Gráfico por região com pelo menos 5 bairros no seed.
+- [x] CRUD de bairros/regiões validado e protegido por tenant.
+- [x] Build e suíte de testes verdes.
+- [x] Handoff publicado para IA-3.

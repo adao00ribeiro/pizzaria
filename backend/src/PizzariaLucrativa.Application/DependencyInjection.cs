@@ -32,6 +32,10 @@ public static class ApplicationServiceCollectionExtensions
         services.AddScoped<IReportService, ReportService>();
         services.AddScoped<ITenantService, TenantService>();
         services.AddScoped<IRecalculationService, RecalculationService>();
+        services.AddScoped<INeighborhoodService, NeighborhoodService>();
+        services.AddScoped<IAnalyticsService, AnalyticsService>();
+        services.AddScoped<IDateTimeProvider, DateTimeProvider>();
+        services.AddScoped<IReportPeriodResolver, ReportPeriodResolver>();
 
         return services;
     }
