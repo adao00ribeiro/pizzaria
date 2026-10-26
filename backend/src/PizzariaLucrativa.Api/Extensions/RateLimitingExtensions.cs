@@ -54,6 +54,19 @@ public static class RateLimitingExtensions
                     QueueLimit = 0
                 });
             });
+
+            // Sprint IA-3: rate limit dedicado para chat da IA (20 mensagens/min por IP/usuário)
+            options.AddPolicy("ai-chat", context =>
+            {
+                var key = context.User?.Identity?.Name ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+                return RateLimitPartition.GetFixedWindowLimiter($"ai-chat:{key}", _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 20,
+                    Window = TimeSpan.FromMinutes(1),
+                    AutoReplenishment = true,
+                    QueueLimit = 0
+                });
+            });
         });
 
         return services;

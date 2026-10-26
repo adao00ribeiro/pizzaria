@@ -1,5 +1,6 @@
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
+using PizzariaLucrativa.Application.Ai;
 using PizzariaLucrativa.Application.Interfaces;
 using PizzariaLucrativa.Application.Services;
 using PizzariaLucrativa.Application.Validators;
@@ -11,6 +12,7 @@ public static class ApplicationServiceCollectionExtensions
 {
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
+        services.AddMemoryCache();
         services.AddValidatorsFromAssemblyContaining<IngredientInputValidator>();
 
         services.AddScoped<IIngredientService, IngredientService>();
@@ -36,6 +38,13 @@ public static class ApplicationServiceCollectionExtensions
         services.AddScoped<IAnalyticsService, AnalyticsService>();
         services.AddScoped<IDateTimeProvider, DateTimeProvider>();
         services.AddScoped<IReportPeriodResolver, ReportPeriodResolver>();
+
+        // Subsistema de IA (Sprint IA-3)
+        services.AddSingleton<AiToolRegistry>();
+        services.AddScoped<AiToolExecutor>();
+        services.AddSingleton<AiPromptBuilder>();
+        services.AddScoped<IAiUsageService, AiUsageService>();
+        services.AddScoped<IAiChatService, AiChatService>();
 
         return services;
     }

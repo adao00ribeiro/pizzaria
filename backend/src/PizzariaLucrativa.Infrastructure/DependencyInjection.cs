@@ -12,7 +12,8 @@ public static class InfrastructureServiceCollectionExtensions
         services
             .AddInfrastructurePersistence(configuration)
             .AddInfrastructureIdentity(configuration)
-            .AddInfrastructureQueues();
+            .AddInfrastructureQueues()
+            .AddInfrastructureAi(configuration);
 
         return services;
     }

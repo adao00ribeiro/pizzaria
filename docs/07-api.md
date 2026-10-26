@@ -502,3 +502,32 @@ requisição. O modelo **não monta datasets**: só escolhe a tool e os parâmet
 
 O orçamento é verificado **antes** da chamada ao Gemini. Quando `Enforce=true` e o teto foi
 atingido, a API responde de forma segura (sem números) e registra `AiUsageRecord.IsFallback=true`.
+
+### 22.3 Runbook Operacional da IA (IA3-16)
+
+#### Como obter e configurar a chave de API
+1. Acesse o [Google AI Studio](https://aistudio.google.com/) e crie uma nova API Key do Google Gemini.
+2. No ambiente de desenvolvimento local, utilize o .NET User Secrets:
+   ```bash
+   dotnet user-secrets set "Ai:ApiKey" "SUA_CHAVE_AQUI" --project backend/src/PizzariaLucrativa.Api
+   dotnet user-secrets set "Ai:Enabled" "true" --project backend/src/PizzariaLucrativa.Api
+   ```
+3. Em ambiente de produção ou container Docker, defina via variável de ambiente:
+   ```bash
+   export Ai__Enabled=true
+   export Ai__ApiKey="SUA_CHAVE_AQUI"
+   export Ai__Budget__MonthlyUsdPerTenant=5.00
+   ```
+
+#### Kill switch e manutenção
+- Para desligar imediatamente as chamadas externas ao Gemini sem redeploy:
+  Defina `Ai__Enabled=false`.
+- A API continua saudável; o endpoint `GET /api/v1/ai/health` responderá `{"enabled": false, ...}` e o chat retornará mensagens de contingência seguras.
+
+#### Gestão de Orçamento e Observabilidade
+- O proprietário pode consultar a qualquer momento o endpoint `GET /api/v1/ai/usage` para verificar consumo mensal de tokens, valor estimado em dólares e porcentagem consumida do teto.
+- Se o teto for atingido (`budgetExceeded = true`), novas perguntas recebem uma resposta educada orientando o ajuste do teto ou aguardo do novo ciclo mensal.
+
+#### Tratamento de Erros e Contingência
+- Erros 429 (TooManyRequests) e 5xx (Google API): O cliente HTTP possui retry automático de até 2 tentativas com backoff exponencial. Se o provedor permanecer indisponível ou estourar o timeout (25s), o backend responde com fallback seguro e orientações de reformulação, sem jamais emitir dados financeiros alucinados.
+
