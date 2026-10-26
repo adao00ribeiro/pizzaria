@@ -42,6 +42,10 @@ public class AppDbContext : IdentityDbContext<AppUser>, IAppDbContext
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
     public DbSet<OrderItemFlavor> OrderItemFlavors => Set<OrderItemFlavor>();
+    public DbSet<Neighborhood> Neighborhoods => Set<Neighborhood>();
+    public DbSet<AiConversation> AiConversations => Set<AiConversation>();
+    public DbSet<AiMessage> AiMessages => Set<AiMessage>();
+    public DbSet<AiUsageRecord> AiUsageRecords => Set<AiUsageRecord>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder builder)
@@ -54,6 +58,9 @@ public class AppDbContext : IdentityDbContext<AppUser>, IAppDbContext
         {
             entity.HasQueryFilter(e => e.TenantId == _tenantProvider.TenantId);
             entity.HasIndex(e => e.TenantId);
+            // TPT: CreatedAt vive na tabela base, então o índice declarado nas entidades
+            // derivadas (histórico de IA) é materializado aqui como composto com TenantId.
+            entity.HasIndex(e => new { e.TenantId, e.CreatedAt });
             entity.Property(e => e.Id).ValueGeneratedNever();
         });
 

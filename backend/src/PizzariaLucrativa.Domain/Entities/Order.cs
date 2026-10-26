@@ -19,10 +19,23 @@ public class Order : TenantEntity
     // ---- Dados do cliente (exigidos no checkout público e em delivery) ----
     public string? CustomerName { get; set; }
     public string? CustomerPhone { get; set; }
+
+    /// <summary>Bairro em texto livre — mantido para compatibilidade e pedidos históricos.</summary>
     public string? AddressDistrict { get; set; }
     public string? AddressStreet { get; set; }
     public string? AddressNumber { get; set; }
     public string? AddressComplement { get; set; }
+
+    // ---- Granularidade de entrega (docs/sprints, IA-1) ----
+    /// <summary>Bairro do catálogo do tenant; nulo para balcão/retirada ou bairro não cadastrado.</summary>
+    public Guid? NeighborhoodId { get; set; }
+    public Neighborhood? Neighborhood { get; set; }
+
+    /// <summary>
+    /// Região congelada no momento do pedido. Nulo = "Não classificado" nos relatórios;
+    /// pedidos antigos continuam válidos sem remapeamento.
+    /// </summary>
+    public NeighborhoodRegion? RegionSnapshot { get; set; }
 
     // ---- Valores (snapshots no momento do pedido) ----
     public decimal Subtotal { get; set; }

@@ -26,6 +26,14 @@ public sealed class OrderMap : IEntityTypeConfiguration<Order>
         builder.HasIndex(o => o.Code);
         builder.HasIndex(o => new { o.Status, o.PlacedAt });
 
+        // IA-1: região congelada para analytics por região/bairro.
+        builder.HasIndex(o => o.RegionSnapshot);
+
+        builder.HasOne(o => o.Neighborhood)
+            .WithMany()
+            .HasForeignKey(o => o.NeighborhoodId)
+            .OnDelete(DeleteBehavior.SetNull);
+
         builder.HasMany(o => o.Items)
             .WithOne(i => i.Order)
             .HasForeignKey(i => i.OrderId)

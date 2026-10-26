@@ -17,7 +17,8 @@ public sealed record CreateOrderInput(
     PaymentMethod? PaymentMethod,
     decimal Discount,
     IReadOnlyList<CreateOrderItemInput> Items,
-    string? DeliveryAddress = null);
+    string? DeliveryAddress = null,
+    Guid? NeighborhoodId = null);
 
 /// <summary>
 /// Item do pedido: pizza (SizeId + 1–4 sabores), bebida (sabor único, sem SizeId)
@@ -66,7 +67,9 @@ public sealed record OrderDto(
     DateTime? DeliveredAt,
     DateTime? CancelledAt,
     string? CancelReason,
-    IReadOnlyList<OrderItemDto> Items)
+    IReadOnlyList<OrderItemDto> Items,
+    Guid? NeighborhoodId = null,
+    NeighborhoodRegion? RegionSnapshot = null)
 {
     public string? DeliveryAddress => !string.IsNullOrWhiteSpace(AddressStreet)
         ? $"{AddressStreet}, {AddressNumber ?? "s/n"}{(string.IsNullOrWhiteSpace(AddressDistrict) ? "" : $" - {AddressDistrict}")}{(string.IsNullOrWhiteSpace(AddressComplement) ? "" : $" ({AddressComplement})")}"
@@ -239,7 +242,8 @@ public sealed record CreatePublicOrderInput(
     string? Notes,
     PaymentMethod? PaymentMethod,
     IReadOnlyList<CreateOrderItemInput> Items,
-    string? DeliveryAddress = null);
+    string? DeliveryAddress = null,
+    Guid? NeighborhoodId = null);
 
 /// <summary>
 /// Status público do pedido por código (`GET /public/{slug}/orders/{code}`).

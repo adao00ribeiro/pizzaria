@@ -14,6 +14,14 @@ erDiagram
     Tenant ||--o{ Combo : possui
     Tenant ||--o{ Alert : possui
     Tenant ||--o{ Order : recebe
+    Tenant ||--o{ Neighborhood : cadastra
+    Tenant ||--o{ AiConversation : possui
+    Tenant ||--o{ AiMessage : possui
+    Tenant ||--o{ AiUsageRecord : registra
+
+    Neighborhood }o--o| Order : classifica
+    AiConversation ||--o{ AiMessage : contem
+    AiConversation ||--o{ AiUsageRecord : referencia
 
     Ingredient ||--o{ PreparationItem : compoe
     Preparation ||--o{ PreparationItem : compoe
@@ -214,6 +222,8 @@ Papéis: `owner` / `atendente` / `pizzaiolo` (Sprint 1). Segurança: `roleGuard`
 | PlacedByUserId | string(450)? | null = pedido público (site) |
 | PlacedAt / StartedAt / ReadyAt / DeliveredAt / CancelledAt | datetime2 | |
 | CancelReason | varchar(300)? | obrigatório ao cancelar |
+| NeighborhoodId | GUID? FK | bairro do catálogo (`Neighborhoods`); nulo em balcão/retirada ou bairro não cadastrado (IA-1) |
+| RegionSnapshot | enum? | região congelada no momento do pedido (`Center`, `North`, `South`, `East`, `West`, `Other`); nulo = “Não classificado” (IA-1) |
 
 ### OrderItem — docs/10 Sprint 2
 | Campo | Tipo | Obs |
@@ -255,6 +265,59 @@ Papéis: `owner` / `atendente` / `pizzaiolo` (Sprint 1). Segurança: `roleGuard`
 | CreatedAt / ResolvedAt | datetime2 | |
 | UNIQUE parcial: 1 alerta aberto por (tipo, item) | | evita spam a cada recálculo |
 
+### Neighborhood (bairro/região) — IA-1/IA-2
+| Campo | Tipo | Obs |
+|-------|------|-----|
+| Id | GUID PK | |
+| TenantId | GUID FK | |
+| Name | varchar(120) | obrigatório; unicidade por tenant garantida no `NeighborhoodService` (TPT) |
+| Region | enum | `Center`, `North`, `South`, `East`, `West`, `Other` |
+| IsActive | bool | desativa sem apagar histórico de pedidos |
+
+> O pedido guarda `NeighborhoodId` e **congela** `RegionSnapshot`; remapear a região do
+> bairro depois não altera relatórios históricos. Delivery sem bairro cadastrado mantém
+> ambos nulos e é agrupado como “Não classificado”.
+
+### AiConversation — IA-1/IA-3
+| Campo | Tipo | Obs |
+|-------|------|-----|
+| Id | GUID PK | |
+| TenantId | GUID FK | |
+| UserId | varchar(450) | owner dono da conversa |
+| Title | varchar(160) | título curto da listagem |
+| IsArchived | bool | arquiva sem excluir |
+| CreatedAt / UpdatedAt | datetime2 | herdados de `TenantEntity` |
+
+### AiMessage — IA-1/IA-3
+| Campo | Tipo | Obs |
+|-------|------|-----|
+| Id | GUID PK | |
+| TenantId | GUID FK | |
+| ConversationId | GUID FK | cascade ao excluir a conversa |
+| Role | enum | `User`, `Assistant` |
+| Content | varchar(8000) | texto da mensagem; sem payload bruto de tool por padrão |
+| InputTokens / OutputTokens | int | consumo da mensagem |
+| EstimatedCostUsd | decimal(18,4) | custo estimado |
+| ToolsUsed | varchar(500)? | nomes das tools separados por vírgula |
+| CreatedAt | datetime2 | herdado de `TenantEntity` |
+
+### AiUsageRecord — IA-1/IA-3
+| Campo | Tipo | Obs |
+|-------|------|-----|
+| Id | GUID PK | |
+| TenantId | GUID FK | |
+| UserId | varchar(450) | quem disparou a chamada |
+| ConversationId | GUID? FK | `SET NULL` ao excluir a conversa; consumo permanece auditável |
+| Provider / Model | varchar(40/80) | ex.: `Gemini` / `gemini-1.5-flash` |
+| InputTokens / OutputTokens | int | tokens retornados pelo provedor |
+| EstimatedCostUsd | decimal(18,4) | custo estimado da chamada |
+| LatencyMs | int | latência observada |
+| IsFallback | bool | resposta segura por timeout/429/orçamento |
+| CreatedAt | datetime2 | herdado de `TenantEntity` |
+
+> `AiUsageRecord` **não** guarda prompt nem conteúdo de mensagem. O histórico é sempre
+> owner-only e isolado pelo query filter de tenant.
+
 ## 3. Índices recomendados
 
 - `Ingredient (TenantId, Name)` — busca.
@@ -264,6 +327,14 @@ Papéis: `owner` / `atendente` / `pizzaiolo` (Sprint 1). Segurança: `roleGuard`
 - `Alert (TenantId, Status)` — lista de alertas.
 - `Order (Code)` — busca pelo código de acompanhamento.
 - `Order (Status, PlacedAt)` — fila da produção e listagem por dia.
+- `Order (RegionSnapshot)` — analytics por região (IA-2).
+- `Order (NeighborhoodId)` — vínculo com o catálogo de bairros.
+- `Neighborhood (Name)` e `Neighborhood (Region)` — catálogo e agrupamento.
+- `AiConversation (UserId)` — histórico do owner.
+- `AiMessage (ConversationId)` — mensagens da conversa.
+- `AiUsageRecord (UserId)` — consumo por usuário.
+- `TenantEntity (TenantId, CreatedAt)` — índice compartilhado na tabela base TPT para
+  histórico (`AiMessage.CreatedAt`) e orçamento (`AiUsageRecord.CreatedAt`).
 
 > **Desvio consciente (TPT):** as entidades herdam `TenantEntity` (Id/TenantId/CreatedAt/
 > UpdatedAt) em tabela base (Table-Per-Type), então os índices compostos que
@@ -272,6 +343,11 @@ Papéis: `owner` / `atendente` / `pizzaiolo` (Sprint 1). Segurança: `roleGuard`
 > e `Order (Status, PlacedAt)`. A **unicidade do código por tenant** é garantida no
 > `OrderService` (checagem + geração com retry). Revisitar na Sprint 7 se o TPT for
 > trocado por TPH.
+>
+> Pelo mesmo motivo, `CreatedAt` do histórico e do uso de IA é indexado na tabela base
+> como `(TenantId, CreatedAt)` — o EF não materializa índice em propriedade herdada a
+> partir da entidade derivada. A unicidade de `Neighborhood.Name` por tenant também é
+> garantida no serviço, não por índice único composto.
 
 ## 4. Derivações (não são verdade fonte)
 

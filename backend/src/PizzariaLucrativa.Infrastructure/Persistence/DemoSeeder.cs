@@ -93,6 +93,7 @@ public sealed class DemoSeeder
         {
             await EnsureStaffUsersAsync(existingOwner.TenantId);
             await BackfillDemoProductImagesAsync(ct);
+            await EnsureNeighborhoodsAsync(ct);
 
             if (createdCatalog)
             {
@@ -174,6 +175,47 @@ public sealed class DemoSeeder
             if (createResult.Succeeded)
                 await _users.AddToRoleAsync(user, role);
         }
+    }
+
+    /// <summary>
+    /// Seed idempotente do catálogo de bairros/regiões (IA-1/IA-2). Roda antes dos pedidos
+    /// para que o fluxo de delivery possa resolver a região quando aplicável.
+    /// </summary>
+    private async Task EnsureNeighborhoodsAsync(CancellationToken ct)
+    {
+        var catalog = new (string Name, NeighborhoodRegion Region)[]
+        {
+            ("Centro", NeighborhoodRegion.Center),
+            ("Sé", NeighborhoodRegion.Center),
+            ("Jardins", NeighborhoodRegion.West),
+            ("Pinheiros", NeighborhoodRegion.West),
+            ("Lapa", NeighborhoodRegion.West),
+            ("Butantã", NeighborhoodRegion.West),
+            ("Moema", NeighborhoodRegion.South),
+            ("Vila Mariana", NeighborhoodRegion.South),
+            ("Ipiranga", NeighborhoodRegion.South),
+            ("Tatuapé", NeighborhoodRegion.East),
+            ("Itaquera", NeighborhoodRegion.East),
+            ("Santana", NeighborhoodRegion.North)
+        };
+
+        var existing = await _db.Set<Neighborhood>()
+            .Select(n => n.Name)
+            .ToListAsync(ct);
+        var known = new HashSet<string>(existing, StringComparer.OrdinalIgnoreCase);
+
+        var added = 0;
+        foreach (var (name, region) in catalog)
+        {
+            if (!known.Add(name))
+                continue;
+
+            _db.Add(new Neighborhood { Name = name, Region = region, IsActive = true });
+            added++;
+        }
+
+        if (added > 0)
+            await _db.SaveChangesAsync(ct);
     }
 
     private async Task CreateBeveragesAndComboAsync(

@@ -80,7 +80,8 @@ public sealed partial class OrderService : IOrderService
             PaymentMethod: input.PaymentMethod,
             Discount: 0m, // Nunca aceita desconto vindo do cliente anônimo
             Items: input.Items,
-            DeliveryAddress: input.DeliveryAddress);
+            DeliveryAddress: input.DeliveryAddress,
+            NeighborhoodId: input.NeighborhoodId);
 
         return CreateCoreAsync(createInput, isPublic: true, idempotencyKey, ct);
     }
@@ -135,6 +136,7 @@ public sealed partial class OrderService : IOrderService
         ValidateShape(input);
 
         var fees = await LoadFeesAsync(ct);
+        var (neighborhoodId, regionSnapshot) = await ResolveNeighborhoodAsync(input.NeighborhoodId, ct);
 
         var order = new Order
         {
@@ -147,6 +149,8 @@ public sealed partial class OrderService : IOrderService
             AddressStreet = Clean(input.AddressStreet),
             AddressNumber = Clean(input.AddressNumber),
             AddressComplement = Clean(input.AddressComplement),
+            NeighborhoodId = neighborhoodId,
+            RegionSnapshot = regionSnapshot,
             Notes = Clean(input.Notes),
             PaymentMethod = input.PaymentMethod,
             PlacedByUserId = isPublic ? null : _currentUser.UserId,
@@ -737,6 +741,26 @@ public sealed partial class OrderService : IOrderService
                ?? new FeeConfig { TenantId = tenantId };
     }
 
+    /// <summary>
+    /// Valida o bairro informado contra o catálogo do tenant (o query filter já impede
+    /// enxergar bairro de outro tenant) e congela a região no pedido.
+    /// </summary>
+    private async Task<(Guid? Id, NeighborhoodRegion? Region)> ResolveNeighborhoodAsync(
+        Guid? neighborhoodId, CancellationToken ct)
+    {
+        if (neighborhoodId is null)
+            return (null, null);
+
+        var neighborhood = await _db.FirstOrDefaultAsync(
+                _db.Set<Neighborhood>().Where(n => n.Id == neighborhoodId.Value), ct)
+            ?? throw new ValidationException("neighborhoodId", "Bairro não encontrado.");
+
+        if (!neighborhood.IsActive)
+            throw new ValidationException("neighborhoodId", "O bairro informado está desativado.");
+
+        return (neighborhood.Id, neighborhood.Region);
+    }
+
     private async Task<Order> FindWithItemsAsync(Guid id, CancellationToken ct)
     {
         var order = await _db.FirstOrDefaultAsync(_db.Set<Order>().Where(o => o.Id == id), ct)
@@ -807,7 +831,9 @@ public sealed partial class OrderService : IOrderService
             order.Notes, order.PaymentMethod,
             order.PlacedAt, order.StartedAt, order.ReadyAt, order.DeliveredAt, order.CancelledAt,
             order.CancelReason,
-            itemDtos);
+            itemDtos,
+            order.NeighborhoodId,
+            order.RegionSnapshot);
     }
 
     private static CreateOrderInput NormalizeAddress(CreateOrderInput input)

@@ -228,6 +228,8 @@ namespace PizzariaLucrativa.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("TenantId");
 
+                    b.HasIndex("TenantId", "CreatedAt");
+
                     b.ToTable("TenantEntity");
 
                     b.UseTptMappingStrategy();
@@ -343,6 +345,107 @@ namespace PizzariaLucrativa.Infrastructure.Persistence.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("RefreshTokens");
+                });
+
+            modelBuilder.Entity("PizzariaLucrativa.Domain.Entities.AiConversation", b =>
+                {
+                    b.HasBaseType("PizzariaLucrativa.Domain.Entities.TenantEntity");
+
+                    b.Property<bool>("IsArchived")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("TEXT");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("AiConversations", (string)null);
+                });
+
+            modelBuilder.Entity("PizzariaLucrativa.Domain.Entities.AiMessage", b =>
+                {
+                    b.HasBaseType("PizzariaLucrativa.Domain.Entities.TenantEntity");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(8000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("ConversationId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("EstimatedCostUsd")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("InputTokens")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("OutputTokens")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Role")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ToolsUsed")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.HasIndex("ConversationId");
+
+                    b.ToTable("AiMessages", (string)null);
+                });
+
+            modelBuilder.Entity("PizzariaLucrativa.Domain.Entities.AiUsageRecord", b =>
+                {
+                    b.HasBaseType("PizzariaLucrativa.Domain.Entities.TenantEntity");
+
+                    b.Property<Guid?>("ConversationId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("EstimatedCostUsd")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("InputTokens")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsFallback")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("LatencyMs")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Model")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("OutputTokens")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("TEXT");
+
+                    b.HasIndex("ConversationId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("AiUsageRecords", (string)null);
                 });
 
             modelBuilder.Entity("PizzariaLucrativa.Domain.Entities.Alert", b =>
@@ -518,6 +621,28 @@ namespace PizzariaLucrativa.Infrastructure.Persistence.Migrations
                     b.ToTable("Ingredients", (string)null);
                 });
 
+            modelBuilder.Entity("PizzariaLucrativa.Domain.Entities.Neighborhood", b =>
+                {
+                    b.HasBaseType("PizzariaLucrativa.Domain.Entities.TenantEntity");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Region")
+                        .HasColumnType("INTEGER");
+
+                    b.HasIndex("Name");
+
+                    b.HasIndex("Region");
+
+                    b.ToTable("Neighborhoods", (string)null);
+                });
+
             modelBuilder.Entity("PizzariaLucrativa.Domain.Entities.Order", b =>
                 {
                     b.HasBaseType("PizzariaLucrativa.Domain.Entities.TenantEntity");
@@ -569,6 +694,9 @@ namespace PizzariaLucrativa.Infrastructure.Persistence.Migrations
                         .HasPrecision(18, 4)
                         .HasColumnType("INTEGER");
 
+                    b.Property<Guid?>("NeighborhoodId")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Notes")
                         .HasMaxLength(500)
                         .HasColumnType("TEXT");
@@ -584,6 +712,9 @@ namespace PizzariaLucrativa.Infrastructure.Persistence.Migrations
 
                     b.Property<DateTime?>("ReadyAt")
                         .HasColumnType("TEXT");
+
+                    b.Property<int?>("RegionSnapshot")
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime?>("StartedAt")
                         .HasColumnType("TEXT");
@@ -603,6 +734,10 @@ namespace PizzariaLucrativa.Infrastructure.Persistence.Migrations
                         .HasColumnType("INTEGER");
 
                     b.HasIndex("Code");
+
+                    b.HasIndex("NeighborhoodId");
+
+                    b.HasIndex("RegionSnapshot");
 
                     b.HasIndex("Status", "PlacedAt");
 
@@ -975,6 +1110,48 @@ namespace PizzariaLucrativa.Infrastructure.Persistence.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("PizzariaLucrativa.Domain.Entities.AiConversation", b =>
+                {
+                    b.HasOne("PizzariaLucrativa.Domain.Entities.TenantEntity", null)
+                        .WithOne()
+                        .HasForeignKey("PizzariaLucrativa.Domain.Entities.AiConversation", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("PizzariaLucrativa.Domain.Entities.AiMessage", b =>
+                {
+                    b.HasOne("PizzariaLucrativa.Domain.Entities.AiConversation", "Conversation")
+                        .WithMany("Messages")
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PizzariaLucrativa.Domain.Entities.TenantEntity", null)
+                        .WithOne()
+                        .HasForeignKey("PizzariaLucrativa.Domain.Entities.AiMessage", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Conversation");
+                });
+
+            modelBuilder.Entity("PizzariaLucrativa.Domain.Entities.AiUsageRecord", b =>
+                {
+                    b.HasOne("PizzariaLucrativa.Domain.Entities.AiConversation", "Conversation")
+                        .WithMany()
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("PizzariaLucrativa.Domain.Entities.TenantEntity", null)
+                        .WithOne()
+                        .HasForeignKey("PizzariaLucrativa.Domain.Entities.AiUsageRecord", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Conversation");
+                });
+
             modelBuilder.Entity("PizzariaLucrativa.Domain.Entities.Alert", b =>
                 {
                     b.HasOne("PizzariaLucrativa.Domain.Entities.TenantEntity", null)
@@ -1057,6 +1234,15 @@ namespace PizzariaLucrativa.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("PizzariaLucrativa.Domain.Entities.Neighborhood", b =>
+                {
+                    b.HasOne("PizzariaLucrativa.Domain.Entities.TenantEntity", null)
+                        .WithOne()
+                        .HasForeignKey("PizzariaLucrativa.Domain.Entities.Neighborhood", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("PizzariaLucrativa.Domain.Entities.Order", b =>
                 {
                     b.HasOne("PizzariaLucrativa.Domain.Entities.TenantEntity", null)
@@ -1064,6 +1250,13 @@ namespace PizzariaLucrativa.Infrastructure.Persistence.Migrations
                         .HasForeignKey("PizzariaLucrativa.Domain.Entities.Order", "Id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("PizzariaLucrativa.Domain.Entities.Neighborhood", "Neighborhood")
+                        .WithMany()
+                        .HasForeignKey("NeighborhoodId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Neighborhood");
                 });
 
             modelBuilder.Entity("PizzariaLucrativa.Domain.Entities.OrderItem", b =>
@@ -1265,6 +1458,11 @@ namespace PizzariaLucrativa.Infrastructure.Persistence.Migrations
                     b.Navigation("Preparation");
 
                     b.Navigation("TechnicalSheet");
+                });
+
+            modelBuilder.Entity("PizzariaLucrativa.Domain.Entities.AiConversation", b =>
+                {
+                    b.Navigation("Messages");
                 });
 
             modelBuilder.Entity("PizzariaLucrativa.Domain.Entities.Combo", b =>

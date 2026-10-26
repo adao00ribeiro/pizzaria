@@ -308,3 +308,197 @@ ingrediente: um `StockMovement(OrderOut)` por ingrediente.
 | GET | `/reports/profit/by-day?from=&to=` | série diária (`date`, `ordersCount`, `revenue`, `cost`, `grossProfit`, `marginPercentage`) |
 | GET | `/reports/profit/by-product?from=&to=` | ranking de produtos/sabores e combos vendidos no período |
 | GET | `/reports/profit/by-channel?from=&to=` | participação por canal (`Counter`, `Pickup`, `Delivery`, `PublicSite`) |
+
+## 19. Analytics — contrato da IA (implementado na IA-2)
+
+Contratos congelados na IA-1 em `Application/DTOs/AnalyticsDtos.cs`. O período chegou
+resolvido do backend (`from` inclusivo, `to` exclusivo) e já está em UTC; nenhum endpoint
+aceita data em texto livre.
+
+| Método | Rota | Resposta |
+|--------|------|----------|
+| GET | `/analytics/orders/by-region?from=&to=&limit=` | `OrdersByRegionDto` (`items[].district`, `region`, `regionLabel`, `ordersCount`, `completedOrdersCount`, `revenue`, `averageTicket`, `sharePercentage`) |
+| GET | `/analytics/orders/summary?from=&to=` | `OrdersSummaryDto` (contagens por status/canal/pagamento, `completedRevenue`, `averageTicket`) |
+| GET | `/analytics/sales/heatmap?from=&to=` | `SalesHeatmapDto` (7 dias × 24 horas locais, incluindo zeros) |
+| GET | `/analytics/compare?fromA=&toA=&fromB=&toB=` | `PeriodComparisonDto` (métricas e variação absoluta/percentual) |
+
+```json
+// GET /analytics/orders/by-region?from=2026-09-01&to=2026-10-01&limit=10
+{
+  "period": { "from": "2026-09-01T03:00:00Z", "to": "2026-10-01T03:00:00Z", "timeZoneId": "America/Sao_Paulo" },
+  "items": [
+    {
+      "neighborhoodId": "3f0f6b6a-7f4c-4c5d-9a3a-1f0d2e7c8b11",
+      "district": "Moema",
+      "region": "South",
+      "regionLabel": "Sul",
+      "ordersCount": 42,
+      "completedOrdersCount": 39,
+      "revenue": 2380.50,
+      "averageTicket": 61.04,
+      "sharePercentage": 31.2
+    }
+  ],
+  "totalOrders": 134,
+  "totalRevenue": 7620.40
+}
+```
+
+Regras do contrato:
+
+- `region = null` → `regionLabel = "Não classificado"` (pedido antigo ou bairro fora do catálogo).
+- `revenue` soma **somente** pedidos `Completed`; pedidos cancelados nunca entram.
+- `limit` entre 1 e 50; período máximo de 366 dias.
+
+## 20. Bairros — contrato da IA (implementado na IA-2)
+
+| Método | Rota | Observação |
+|--------|------|------------|
+| GET | `/neighborhoods?activeOnly=true` | catálogo do tenant |
+| POST | `/neighborhoods` | cria; `409` se o nome já existe no tenant |
+| PUT | `/neighborhoods/{id}` | atualiza nome/região/ativo |
+| DELETE | `/neighborhoods/{id}` | `409` se em uso; alternativa é `isActive=false` |
+
+```json
+{ "name": "Moema", "region": "South", "isActive": true }
+```
+
+`NeighborhoodDto` devolve `{ id, name, region, isActive }`. Todos os endpoints são
+`OwnerOnly` e o tenant vem do token.
+
+## 21. Assistente de IA — contrato de chat, histórico e `ChartSpec` (congelado na IA-1)
+
+> Implementação prevista na IA-3. O contrato abaixo é a referência para backend, frontend
+> e tools do Gemini; alterações exigem comunicação explícita do `orchestrator`.
+
+### 21.1 Chat
+
+| Método | Rota | Resposta |
+|--------|------|----------|
+| POST | `/ai/chat` | `ChatAnswerDto` |
+| GET | `/ai/conversations` | `ConversationSummaryDto[]` |
+| GET | `/ai/conversations/{id}` | `ConversationDetailDto` |
+| DELETE | `/ai/conversations/{id}` | `204` |
+| GET | `/ai/usage` | `AiUsageDto` |
+
+```json
+// POST /ai/chat
+{ "message": "Quais regiões tiveram mais pedidos no mês passado?", "conversationId": null }
+```
+
+```json
+// 200 ChatAnswerDto
+{
+  "conversationId": "c4a8e8d0-3a21-4b9e-8f3a-5b6c7d8e9f01",
+  "messageId": "e1d2c3b4-a596-4788-9012-3456789abcde",
+  "text": "No mês passado, Moema liderou com 42 pedidos e R$ 2.380,50.",
+  "blocks": [
+    { "type": "text", "text": "No mês passado, Moema liderou com 42 pedidos e R$ 2.380,50." },
+    {
+      "type": "chart",
+      "chart": {
+        "kind": "bar",
+        "title": "Pedidos por região — setembro/2026",
+        "labels": ["Moema", "Tatuapé", "Santana"],
+        "series": [{ "name": "Pedidos", "data": [42, 31, 24] }],
+        "valueFormat": "number"
+      }
+    }
+  ],
+  "meta": {
+    "provider": "Gemini",
+    "model": "gemini-1.5-flash",
+    "periodLabel": "setembro/2026",
+    "latencyMs": 1840,
+    "toolsUsed": ["get_orders_by_region"],
+    "isFallback": false
+  },
+  "usage": {
+    "inputTokens": 912,
+    "outputTokens": 148,
+    "estimatedCostUsd": 0.0003,
+    "monthlyInputTokens": 15240,
+    "monthlyOutputTokens": 2310,
+    "monthlyCostUsd": 0.0041,
+    "monthlyBudgetUsd": 5.0,
+    "budgetUsedPercentage": 0.08,
+    "budgetExceeded": false,
+    "isFallback": false
+  }
+}
+```
+
+### 21.2 `ChartSpec`
+
+`ChartSpecDto` é montado **exclusivamente no backend** a partir do resultado de uma tool:
+`kind` (`bar|line|pie|doughnut`), `title`, `labels`, `series[]` (`name`, `data[]`) e
+`valueFormat` (`currency|number|percent`). O modelo de linguagem nunca envia números,
+labels ou datasets — se a tool falhar, o bloco de gráfico não é criado.
+
+`AnswerBlockDto` aceita exatamente um payload conforme `type`:
+
+| `type` | Payload |
+|--------|---------|
+| `text` | `text` |
+| `chart` | `chart` (`ChartSpecDto`) |
+| `table` | `table` (`title?`, `columns[]`, `rows[][]`) |
+| `kpis` | `kpis[]` (`label`, `value`, `valueFormat`) |
+
+### 21.3 Histórico persistido
+
+- `ChatMessageDto` guarda `role` (`User|Assistant`), `content`, `toolsUsed[]` (nomes),
+  `inputTokens`, `outputTokens` e `estimatedCostUsd`.
+- `content` é limitado a **8.000** caracteres e `toolsUsed` a **500**; payload bruto de
+  tool não é persistido (`Ai:History:StoreToolResults=false` por padrão).
+- Nunca são gravados telefone, endereço, nome de cliente ou qualquer PII.
+- `conversationId` de outro tenant retorna `404`; excluir remove conversa e mensagens.
+- `AiUsageRecord` mantém tokens/custo mesmo quando `Ai:History:Enabled=false`.
+
+## 22. Contrato de tools, histórico e configuração (revisão IA1-08)
+
+### 22.1 Tools permitidas (allowlist)
+
+Toda tool tem entrada/saída tipada, `additionalProperties=false` e limites. Nenhuma aceita
+`tenantId`, SQL, nome de tabela, expressão livre ou dataset. Datas em ISO-8601 (UTC),
+período máximo de 366 dias.
+
+| Tool | Entrada | Saída | Limite |
+|------|---------|-------|--------|
+| `get_profit_summary` | `from`, `to` | `ProfitReportDto` | 366 dias |
+| `get_profit_by_day` | `from`, `to` | `ProfitByDayDto[]` | 366 linhas |
+| `get_profit_by_product` | `from`, `to`, `limit` | `ProfitByProductDto[]` | `limit` 1–50 |
+| `get_profit_by_channel` | `from`, `to` | `ProfitByChannelDto[]` | 4 canais |
+| `get_orders_by_region` | `from`, `to`, `limit` | `OrdersByRegionDto` | `limit` 1–50 |
+| `get_orders_summary` | `from`, `to` | `OrdersSummaryDto` | 366 dias |
+| `get_sales_heatmap` | `from`, `to` | `SalesHeatmapDto` | 7 × 24 células |
+| `compare_periods` | `fromA`, `toA`, `fromB`, `toB` | `PeriodComparisonDto` | 2 × 366 dias |
+| `get_stock_alerts` | `status?` | alertas resumidos | 50 linhas |
+
+O executor valida argumentos antes de chamar `IAnalyticsService`/`IReportService`/
+`IStockService`; argumento inválido retorna erro estruturado à tool e nunca derruba a
+requisição. O modelo **não monta datasets**: só escolhe a tool e os parâmetros.
+
+### 22.2 Configuração (`Ai:*`)
+
+| Chave | Padrão | Efeito |
+|-------|--------|--------|
+| `Ai:Enabled` | `false` | kill switch; desliga chamadas externas sem redeploy |
+| `Ai:Provider` | `Gemini` | único provider do MVP; outro valor falha com mensagem clara |
+| `Ai:BaseUrl` | `https://generativelanguage.googleapis.com` | base do adapter HTTP |
+| `Ai:Model` | `gemini-1.5-flash` | modelo configurável sem alterar a Application |
+| `Ai:ApiKey` | — | via `Ai__ApiKey`/user-secrets; nunca versionada nem logada |
+| `Ai:MaxOutputTokens` | `1024` | teto de saída por chamada |
+| `Ai:TimeoutSeconds` | `25` | timeout do provedor |
+| `Ai:MaxToolRounds` | `4` | rodadas máximas de function calling |
+| `Ai:MaxHistoryMessages` | `12` | janela de contexto enviada ao modelo |
+| `Ai:CacheMinutes` | `5` | cache de perguntas idênticas |
+| `Ai:Budget:MonthlyUsdPerTenant` | `5.00` (provisório) | teto mensal por tenant |
+| `Ai:Budget:Enforce` | `true` | bloqueia a chamada ao atingir o teto |
+| `Ai:Budget:AlertPercentage` | `80` | alerta de consumo |
+| `Ai:History:Enabled` | `true` | persiste conversas/mensagens |
+| `Ai:History:RetentionDays` | `90` | retenção; `0` desativa a limpeza automática |
+| `Ai:History:MaxMessagesPerConversation` | `50` | limite por conversa |
+| `Ai:History:StoreToolResults` | `false` | não persiste payload bruto de tool |
+
+O orçamento é verificado **antes** da chamada ao Gemini. Quando `Enforce=true` e o teto foi
+atingido, a API responde de forma segura (sem números) e registra `AiUsageRecord.IsFallback=true`.
