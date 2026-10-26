@@ -34,7 +34,7 @@ Sempre que o usuário (ou o `orchestrator`) solicitar a criação ou evolução 
 1. **Criação/Atualização da Skill**:
    - Acione o subagente `skill-creator` (via `invoke_subagent`) ou crie/atualize diretamente os arquivos da skill em `.agents/skills/<nome-da-skill>/SKILL.md`, extraindo exemplos reais e atualizados do código do projeto.
 2. **Auditoria e Vínculo Imediato nos Agentes**:
-   - **Imediatamente** após criar ou atualizar uma skill, inspecione todos os agentes em `.agents/agents/*.md` (`orchestrator.md`, `domain-architect.md`, `backend-specialist.md`, `frontend-specialist.md`, `qa-test-specialist.md`).
+   - **Imediatamente** após criar ou atualizar uma skill, inspecione todos os agentes em `.agents/agents/*.md` (`orchestrator.md`, `domain-architect.md`, `backend-specialist.md`, `ai-specialist.md`, `frontend-specialist.md`, `qa-test-specialist.md`).
    - Vincule a skill na chave `skills:` do **YAML Frontmatter** dos agentes que devem utilizá-la (ex.: `skills: [.agents/skills/nome-da-skill]`).
    - Atualize o `# System Prompt` desses agentes relevantes com instruções explícitas sobre **quando** e **como** consultar a nova skill antes de escrever código.
 
@@ -51,6 +51,7 @@ Quando acionado para auditar o ecossistema ou após grandes refatorações estru
    - `.agents/agents/orchestrator.md`
    - `.agents/agents/domain-architect.md`
    - `.agents/agents/backend-specialist.md`
+   - `.agents/agents/ai-specialist.md`
    - `.agents/agents/frontend-specialist.md`
    - `.agents/agents/qa-test-specialist.md`
    - `.agents/skills/*/SKILL.md`

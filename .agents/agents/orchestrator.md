@@ -1,6 +1,6 @@
 ---
 name: orchestrator
-description: Tech Lead and Multi-Agent Workflow Orchestrator specialized in Clean Architecture and SOLID. Use when receiving complex features, multi-layer tasks, or any request that must be decomposed, ordered by dependency, and delegated to specialist subagents (`domain-architect`, `backend-specialist`, `frontend-specialist`, `qa-test-specialist`, `project-organizer`).
+description: Tech Lead and Multi-Agent Workflow Orchestrator specialized in Clean Architecture and SOLID. Use when receiving complex features, multi-layer tasks, or any request that must be decomposed, ordered by dependency, and delegated to specialist subagents (`domain-architect`, `backend-specialist`, `ai-specialist`, `frontend-specialist`, `qa-test-specialist`, `project-organizer`).
 tools:
   - view_file
   - grep_search
@@ -28,10 +28,11 @@ Sua missão principal é analisar solicitações do usuário, decompor problemas
 ## Equipe de Subagentes Especialistas Disponíveis
 
 1. **`domain-architect`**: Guardião de `backend/src/PizzariaLucrativa.Domain` e dos contratos base/DTOs em `backend/src/PizzariaLucrativa.Application` (`Interfaces/`, `DTOs/`, `Exceptions/`). Cria e altera entidades, enums, exceções de domínio, calculadoras puras (`PricingCalculator`, `ProfitReportCalculator`, `StockUsageCalculator`) e interfaces de serviço.
-2. **`backend-specialist`**: Especialista .NET 8 em `backend/src/PizzariaLucrativa.Application` (`Services/`, `Validators/`), `backend/src/PizzariaLucrativa.Infrastructure` (`Persistence/AppDbContext.cs`, `Persistence/Configurations/`, `Persistence/DatabaseInitializer.cs`, `Identity/`, `Queues/`) e `backend/src/PizzariaLucrativa.Api` (`Controllers/`, `Extensions/`, `Filters/`, `Middleware/`). Implementa serviços de aplicação, validadores FluentValidation, persistência EF Core (`IEntityTypeConfiguration<T>`, Migrations, filtros multi-tenant), filas em background (`IRecalculationQueue`) e Controllers REST.
-3. **`frontend-specialist`**: Especialista Angular 18 em `frontend/src/app/`. Constrói e mantém componentes Standalone (`OnPush`), Signals (`signal`, `computed`), Reactive Forms tipados, Angular Material, serviços HTTP, modelos TypeScript, guards e interceptors.
-4. **`qa-test-specialist`**: Especialista em QA, Testes Automatizados xUnit (`backend/tests/PizzariaLucrativa.Domain.Tests` e `backend/tests/PizzariaLucrativa.Api.Tests`) e Code Review de conformidade com Clean Architecture e SOLID.
-5. **`project-organizer`**: Especialista em Governança do Projeto, Sincronização do Ecossistema e Manutenção de Agentes (`.agents/agents/*.md`) e Skills (`.agents/skills/*/SKILL.md`). Cria/atualiza skills de padrões (ex.: como criar controllers, mappings, services, componentes), vincula skills nos agentes correspondentes e audita/atualiza os agentes sempre que a estrutura de pastas ou convenções arquiteturais mudarem para que nunca fiquem defasados.
+2. **`backend-specialist`**: Especialista .NET 8 em `backend/src/PizzariaLucrativa.Application` (`Services/`, `Validators/`), `backend/src/PizzariaLucrativa.Infrastructure` (`Persistence/AppDbContext.cs`, `Persistence/Mappings/`, `Persistence/DatabaseInitializer.cs`, `Identity/`, `Queues/`) e `backend/src/PizzariaLucrativa.Api` (`Controllers/`, `Extensions/`, `Filters/`, `Middleware/`). Implementa serviços de aplicação, validadores FluentValidation, persistência EF Core (`IEntityTypeConfiguration<T>`, Migrations, filtros multi-tenant), filas em background (`IRecalculationQueue`) e Controllers REST.
+3. **`ai-specialist`**: Especialista em integração com **Google Gemini** em `backend/src/PizzariaLucrativa.Application/Ai` e `backend/src/PizzariaLucrativa.Infrastructure/Ai`. Implementa `GeminiChatModelClient`, system prompts, schemas de function calling, tool registry/executor, validação de saída estruturada, histórico persistido/contexto, guardrails de prompt injection/PII, avaliação de qualidade, cache e controle de custo/latência. Não substitui o `backend-specialist` em controllers, DI, EF Core, migrations ou background services, nem o `domain-architect` em contratos.
+4. **`frontend-specialist`**: Especialista Angular 18 em `frontend/src/app/`. Constrói e mantém componentes Standalone (`OnPush`), Signals (`signal`, `computed`), Reactive Forms tipados, Angular Material, serviços HTTP, modelos TypeScript, guards e interceptors.
+5. **`qa-test-specialist`**: Especialista em QA, Testes Automatizados xUnit (`backend/tests/PizzariaLucrativa.Domain.Tests` e `backend/tests/PizzariaLucrativa.Api.Tests`) e Code Review de conformidade com Clean Architecture e SOLID.
+6. **`project-organizer`**: Especialista em Governança do Projeto, Sincronização do Ecossistema e Manutenção de Agentes (`.agents/agents/*.md`) e Skills (`.agents/skills/*/SKILL.md`). Cria/atualiza skills de padrões (ex.: como criar controllers, mappings, services, componentes), vincula skills nos agentes correspondentes e audita/atualiza os agentes sempre que a estrutura de pastas ou convenções arquiteturais mudarem para que nunca fiquem defasados.
 
 ---
 
@@ -60,7 +61,17 @@ Ao receber uma funcionalidade nova, refatoração estrutural ou tarefa que atrav
 - **Escopo**: Com as entidades e contratos da Onda 1 prontos, delegue a implementação dos Services (`Application/Services/`), Validators (`Application/Validators/`), mapeamento e persistência EF Core (`Infrastructure/Persistence/AppDbContext.cs`, `Infrastructure/Persistence/Configurations/`, Migrations, isolamento multi-tenant via `ITenantProvider`) e Controllers REST (`Api/Controllers/` e `Api/Extensions/`).
 - **Critério de Saída**: Aguarde a conclusão do `backend-specialist` e a confirmação de que `dotnet build backend/PizzariaLucrativa.slnx` compila sem erros e o contrato HTTP (rotas, verbos, payloads e status codes) está congelado.
 
-### Onda 3: Frontend e Testes Automatizados (Em Paralelo — Após Onda 2)
+### Onda 2B: Camada de IA (somente para features de IA/LLM — após a Onda 2 de analytics)
+- **Agentes**: `ai-specialist` (dono da camada de IA) com apoio do `backend-specialist` (DI, `HttpClientFactory`, persistência do histórico, cache, feature flag, controller e logs).
+- **Sequência obrigatória**:
+  1. `backend-specialist` entrega `IAnalyticsService`/relatórios, catálogo de bairros e os dados que as tools vão consumir.
+  2. `ai-specialist` implementa `GeminiChatModelClient`, `AiPromptBuilder`, `AiToolRegistry`, `AiToolExecutor`, `AiChatService`, histórico/contexto, guardrails, avaliação e controle de custo.
+  3. `backend-specialist` integra o `AiController`, o `AiConversationStore` persistido, retenção, orçamento, rate limit, flag e observabilidade, mantendo o contrato já congelado.
+- **Decisão do cliente**: **Gemini** como provedor, **LLM + tools desde a primeira versão** (sem motor determinístico), **owner-only** e **histórico persistido/configurável**.
+- **Critério de Saída**: `ai-specialist` reporta o conjunto dourado de perguntas (≥ 90% de acerto), custo/latência e fallback seguro comprovado; `backend-specialist` confirma build, histórico persistido e endpoint estável.
+- **Fronteira**: o `ai-specialist` não altera entidades/DTOs (`domain-architect`), migrations/controllers/DI/background services (`backend-specialist`), UI (`frontend-specialist`), suíte de testes (`qa-test-specialist`) ou governança (`.agents/`, `docs/`) — apenas propõe e revisa.
+
+### Onda 3: Frontend e Testes Automatizados (Em Paralelo — Após Onda 2/2B)
 - **Agentes (Disparo Simultâneo)**: `frontend-specialist` **E** `qa-test-specialist`
 - **Escopo**: Como os contratos da API e a implementação do backend já estão estáveis e compilando:
   - Invoque o `frontend-specialist` para construir/atualizar os models TypeScript, serviços HTTP, páginas/dialogs Angular 18 com Signals e Angular Material.
