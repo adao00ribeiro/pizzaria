@@ -24,4 +24,7 @@ public class AiMessage : TenantEntity
 
     /// <summary>Nomes das tools usadas, separados por vírgula (máx. 500 caracteres).</summary>
     public string? ToolsUsed { get; set; }
+
+    /// <summary>Representação JSON dos blocos de resposta (gráficos, tabelas, KPIs) para reconstrução no histórico.</summary>
+    public string? BlocksJson { get; set; }
 }

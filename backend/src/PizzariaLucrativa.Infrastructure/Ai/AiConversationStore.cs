@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using PizzariaLucrativa.Application.DTOs;
@@ -15,6 +16,12 @@ namespace PizzariaLucrativa.Infrastructure.Ai;
 /// </summary>
 public sealed class AiConversationStore : IAiConversationStore
 {
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        WriteIndented = false
+    };
+
     private readonly AppDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly AiOptions _options;
@@ -156,7 +163,8 @@ public sealed class AiConversationStore : IAiConversationStore
                 message.Content,
                 DateTime.UtcNow,
                 message.ToolsUsed ?? Array.Empty<string>(),
-                message.EstimatedCostUsd);
+                message.EstimatedCostUsd,
+                message.Blocks);
         }
 
         var conversation = await _context.AiConversations
@@ -173,6 +181,9 @@ public sealed class AiConversationStore : IAiConversationStore
             ConversationId = conversationId,
             Role = message.Role,
             Content = Truncate(message.Content, 8_000),
+            BlocksJson = message.Blocks != null && message.Blocks.Count > 0
+                ? JsonSerializer.Serialize(message.Blocks, JsonOptions)
+                : null,
             ToolsUsed = message.ToolsUsed != null && message.ToolsUsed.Count > 0
                 ? Truncate(string.Join(",", message.ToolsUsed), 500)
                 : null,
@@ -198,7 +209,8 @@ public sealed class AiConversationStore : IAiConversationStore
             aiMessage.Content,
             aiMessage.CreatedAt,
             tools,
-            aiMessage.EstimatedCostUsd);
+            aiMessage.EstimatedCostUsd,
+            message.Blocks);
     }
 
     public async Task DeleteAsync(Guid conversationId, CancellationToken ct = default)
@@ -245,13 +257,27 @@ public sealed class AiConversationStore : IAiConversationStore
                     ? m.ToolsUsed.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                     : Array.Empty<string>();
 
+                IReadOnlyList<AnswerBlockDto>? blocks = null;
+                if (!string.IsNullOrEmpty(m.BlocksJson))
+                {
+                    try
+                    {
+                        blocks = JsonSerializer.Deserialize<List<AnswerBlockDto>>(m.BlocksJson, JsonOptions);
+                    }
+                    catch
+                    {
+                        // Resiliente caso haja JSON legado/inválido
+                    }
+                }
+
                 return new ConversationMessageDto(
                     m.Id,
                     m.Role,
                     m.Content,
                     m.CreatedAt,
                     tools,
-                    m.EstimatedCostUsd);
+                    m.EstimatedCostUsd,
+                    blocks);
             })
             .ToList();
 

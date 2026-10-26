@@ -21,7 +21,8 @@ public sealed record ChatMessageDto(
     IReadOnlyList<string>? ToolsUsed = null,
     int InputTokens = 0,
     int OutputTokens = 0,
-    decimal EstimatedCostUsd = 0m);
+    decimal EstimatedCostUsd = 0m,
+    IReadOnlyList<AnswerBlockDto>? Blocks = null);
 
 public sealed record ChatAnswerDto(
     Guid ConversationId,
@@ -144,7 +145,8 @@ public sealed record ConversationMessageDto(
     string Content,
     DateTime CreatedAt,
     IReadOnlyList<string> ToolsUsed,
-    decimal EstimatedCostUsd);
+    decimal EstimatedCostUsd,
+    IReadOnlyList<AnswerBlockDto>? Blocks = null);
 
 public sealed record ConversationDetailDto(
     Guid Id,
@@ -162,7 +164,11 @@ public sealed record ChatToolDeclaration(
     string Description,
     JsonElement Parameters);
 
-public sealed record ChatToolCall(string Id, string Name, JsonElement Arguments);
+public sealed record ChatToolCall(
+    string Id,
+    string Name,
+    JsonElement Arguments,
+    string? ThoughtSignature = null);
 
 /// <summary>
 /// Mensagem no protocolo do modelo. <see cref="Role"/> aceita "user", "model" ou "tool";

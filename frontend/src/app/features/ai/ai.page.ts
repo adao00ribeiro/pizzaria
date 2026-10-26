@@ -136,6 +136,7 @@ export class AiPage implements OnInit, AfterViewChecked, OnDestroy {
           id: m.id,
           role: m.role === 'user' ? 'user' : 'model',
           text: m.content,
+          blocks: m.blocks,
           createdAt: m.createdAt,
         }));
         this.messages.set(uiMsgs);

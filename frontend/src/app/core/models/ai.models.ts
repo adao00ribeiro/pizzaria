@@ -105,6 +105,7 @@ export interface ConversationMessage {
   createdAt: string;
   toolsUsed: string[];
   estimatedCostUsd: number;
+  blocks?: AnswerBlock[];
 }
 
 export interface ConversationDetail {

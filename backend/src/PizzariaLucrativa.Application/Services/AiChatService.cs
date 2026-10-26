@@ -259,7 +259,8 @@ public sealed class AiChatService : IAiChatService
                     executedTools.Distinct().ToList(),
                     totalInputTokens,
                     totalOutputTokens,
-                    estimatedCostUsd),
+                    estimatedCostUsd,
+                    blocks),
                 ct);
 
             messageId = savedAssistantMsg.Id;
@@ -424,7 +425,13 @@ public sealed class AiChatService : IAiChatService
             foreach (var item in result.EnumerateArray())
             {
                 var dateStr = item.TryGetProperty("date", out var d) ? d.GetString() ?? "" : "";
-                var netProfit = item.TryGetProperty("netProfit", out var p) ? p.GetDecimal() : 0m;
+                var netProfit = (item.TryGetProperty("grossProfit", out var gp) && gp.TryGetDecimal(out var gpVal))
+                    ? gpVal
+                    : (item.TryGetProperty("netProfit", out var p) && p.TryGetDecimal(out var pVal))
+                        ? pVal
+                        : (item.TryGetProperty("profit", out var prof) && prof.TryGetDecimal(out var profVal))
+                            ? profVal
+                            : 0m;
 
                 labels.Add(dateStr);
                 profits.Add(netProfit);
@@ -458,10 +465,14 @@ public sealed class AiChatService : IAiChatService
             foreach (var item in result.EnumerateArray())
             {
                 var name = item.TryGetProperty("productName", out var n) ? n.GetString() ?? "" : "";
-                var grossProfit = item.TryGetProperty("grossProfit", out var gp) ? gp.GetDecimal() : 0m;
+                var profit = (item.TryGetProperty("profit", out var p) && p.TryGetDecimal(out var pVal))
+                    ? pVal
+                    : (item.TryGetProperty("grossProfit", out var gp) && gp.TryGetDecimal(out var gpVal))
+                        ? gpVal
+                        : 0m;
 
                 labels.Add(name);
-                profits.Add(grossProfit);
+                profits.Add(profit);
             }
 
             return new ChartSpecDto(
@@ -515,7 +526,7 @@ public sealed class AiChatService : IAiChatService
         return null;
     }
 
-    private static ChatAnswerDto BuildFallbackAnswer(
+    private ChatAnswerDto BuildFallbackAnswer(
         Guid conversationId,
         string message,
         int latencyMs,
@@ -526,7 +537,7 @@ public sealed class AiChatService : IAiChatService
             Guid.NewGuid(),
             message,
             new List<AnswerBlockDto> { new(AnswerBlockType.Text, Text: message) },
-            new AiMetaDto("Gemini", "gemini-1.5-flash", null, latencyMs, Array.Empty<string>(), IsFallback: true),
+            new AiMetaDto("Gemini", _options.Model, null, latencyMs, Array.Empty<string>(), IsFallback: true),
             usage);
     }
 }

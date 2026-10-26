@@ -15,6 +15,7 @@ public sealed class AiMessageMap : IEntityTypeConfiguration<AiMessage>
 
         builder.Property(m => m.Content).HasMaxLength(ContentMaxLength).IsRequired();
         builder.Property(m => m.ToolsUsed).HasMaxLength(ToolsUsedMaxLength);
+        builder.Property(m => m.BlocksJson);
 
         builder.HasOne(m => m.Conversation)
             .WithMany(c => c.Messages)

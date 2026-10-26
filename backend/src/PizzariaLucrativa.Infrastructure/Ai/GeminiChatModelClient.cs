@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -9,6 +10,8 @@ using Microsoft.Extensions.Options;
 using PizzariaLucrativa.Application.DTOs;
 using PizzariaLucrativa.Application.Interfaces;
 using PizzariaLucrativa.Application.Options;
+
+[assembly: InternalsVisibleTo("PizzariaLucrativa.Api.Tests")]
 
 namespace PizzariaLucrativa.Infrastructure.Ai;
 
@@ -145,7 +148,7 @@ public sealed class GeminiChatModelClient : IChatModelClient
         }
     }
 
-    private JsonObject BuildGeminiPayload(ChatCompletionRequest request)
+    internal static JsonObject BuildGeminiPayload(ChatCompletionRequest request)
     {
         var root = new JsonObject();
 
@@ -171,7 +174,8 @@ public sealed class GeminiChatModelClient : IChatModelClient
             var role = message.Role.ToLowerInvariant();
             if (role == "tool" || role == "function")
             {
-                contentObj["role"] = "function";
+                // Na API REST do Google Gemini, respostas de função devem ser enviadas com role: "user"
+                contentObj["role"] = "user";
 
                 var funcResp = new JsonObject
                 {
@@ -205,7 +209,18 @@ public sealed class GeminiChatModelClient : IChatModelClient
                             ["name"] = tc.Name,
                             ["args"] = JsonNode.Parse(tc.Arguments.GetRawText()) ?? new JsonObject()
                         };
-                        partsArray.Add(new JsonObject { ["functionCall"] = callObj });
+                        if (!string.IsNullOrWhiteSpace(tc.Id))
+                        {
+                            callObj["id"] = tc.Id;
+                        }
+
+                        var partObj = new JsonObject { ["functionCall"] = callObj };
+                        if (!string.IsNullOrWhiteSpace(tc.ThoughtSignature))
+                        {
+                            partObj["thoughtSignature"] = tc.ThoughtSignature;
+                        }
+
+                        partsArray.Add(partObj);
                     }
                 }
             }
@@ -225,7 +240,7 @@ public sealed class GeminiChatModelClient : IChatModelClient
                 {
                     ["name"] = t.Name,
                     ["description"] = t.Description,
-                    ["parameters"] = JsonNode.Parse(t.Parameters.GetRawText())
+                    ["parameters"] = CleanParametersForGemini(JsonNode.Parse(t.Parameters.GetRawText()))
                 };
                 funcDeclarations.Add(decl);
             }
@@ -252,6 +267,42 @@ public sealed class GeminiChatModelClient : IChatModelClient
         };
 
         return root;
+    }
+
+    /// <summary>
+    /// Remove campos de schema não aceitos pelo protobuf Schema do Google Gemini REST API
+    /// (como 'additionalProperties', '$schema', '$id'), evitando erro 400 INVALID_ARGUMENT.
+    /// </summary>
+    internal static JsonNode? CleanParametersForGemini(JsonNode? node)
+    {
+        if (node is JsonObject obj)
+        {
+            var clean = new JsonObject();
+            foreach (var kvp in obj)
+            {
+                if (kvp.Key.Equals("additionalProperties", StringComparison.OrdinalIgnoreCase) ||
+                    kvp.Key.Equals("$schema", StringComparison.OrdinalIgnoreCase) ||
+                    kvp.Key.Equals("$id", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                clean[kvp.Key] = CleanParametersForGemini(kvp.Value?.DeepClone());
+            }
+            return clean;
+        }
+
+        if (node is JsonArray arr)
+        {
+            var clean = new JsonArray();
+            foreach (var item in arr)
+            {
+                clean.Add(CleanParametersForGemini(item?.DeepClone()));
+            }
+            return clean;
+        }
+
+        return node?.DeepClone();
     }
 
     private ChatCompletionResult ParseGeminiResponse(string json, int latencyMs)
@@ -313,7 +364,9 @@ public sealed class GeminiChatModelClient : IChatModelClient
                 {
                     var name = fc.GetProperty("name").GetString() ?? string.Empty;
                     var args = fc.GetProperty("args").Clone();
-                    toolCalls.Add(new ChatToolCall(Guid.NewGuid().ToString("N"), name, args));
+                    var callId = fc.TryGetProperty("id", out var idElem) ? idElem.GetString() ?? Guid.NewGuid().ToString("N") : Guid.NewGuid().ToString("N");
+                    var thoughtSig = part.TryGetProperty("thoughtSignature", out var tsElem) ? tsElem.GetString() : null;
+                    toolCalls.Add(new ChatToolCall(callId, name, args, thoughtSig));
                 }
             }
 

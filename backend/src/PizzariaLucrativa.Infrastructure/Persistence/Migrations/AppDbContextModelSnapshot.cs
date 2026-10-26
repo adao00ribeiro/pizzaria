@@ -373,6 +373,9 @@ namespace PizzariaLucrativa.Infrastructure.Persistence.Migrations
                 {
                     b.HasBaseType("PizzariaLucrativa.Domain.Entities.TenantEntity");
 
+                    b.Property<string>("BlocksJson")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Content")
                         .IsRequired()
                         .HasMaxLength(8000)
