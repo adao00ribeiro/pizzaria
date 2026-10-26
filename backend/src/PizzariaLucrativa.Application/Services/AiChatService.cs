@@ -24,6 +24,7 @@ public sealed class AiChatService : IAiChatService
     private readonly AiPromptBuilder _promptBuilder;
     private readonly IAiConversationStore _conversationStore;
     private readonly IAiUsageService _usageService;
+    private readonly ITenantProvider _tenantProvider;
     private readonly IMemoryCache _memoryCache;
     private readonly AiOptions _options;
     private readonly ILogger<AiChatService> _logger;
@@ -35,6 +36,7 @@ public sealed class AiChatService : IAiChatService
         AiPromptBuilder promptBuilder,
         IAiConversationStore conversationStore,
         IAiUsageService usageService,
+        ITenantProvider tenantProvider,
         IMemoryCache memoryCache,
         IOptions<AiOptions> options,
         ILogger<AiChatService> logger)
@@ -45,6 +47,7 @@ public sealed class AiChatService : IAiChatService
         _promptBuilder = promptBuilder;
         _conversationStore = conversationStore;
         _usageService = usageService;
+        _tenantProvider = tenantProvider;
         _memoryCache = memoryCache;
         _options = options.Value;
         _logger = logger;
@@ -64,10 +67,13 @@ public sealed class AiChatService : IAiChatService
             throw new ValidationException("Message", "A mensagem excede o limite máximo de 2.000 caracteres.");
         }
 
+        var tenantId = _tenantProvider.TenantId ?? Guid.Empty;
+
         // 1. Kill switch
         if (!_options.Enabled)
         {
             sw.Stop();
+            _logger.LogInformation("AI chat blocked: Kill switch is active (Ai:Enabled=false). TenantId={TenantId}", tenantId);
             var disabledUsage = await _usageService.GetUsageAsync(ct);
             return BuildFallbackAnswer(
                 request.ConversationId ?? Guid.NewGuid(),
@@ -76,12 +82,30 @@ public sealed class AiChatService : IAiChatService
                 disabledUsage);
         }
 
+        // 1.1 Gradual Rollout check (IA5-07)
+        if (_options.RolloutPercentage < 100)
+        {
+            var hash = Math.Abs(tenantId.GetHashCode()) % 100;
+            if (hash >= _options.RolloutPercentage)
+            {
+                sw.Stop();
+                _logger.LogInformation("AI chat blocked by gradual rollout ({Rollout}%): TenantId={TenantId}", _options.RolloutPercentage, tenantId);
+                var rolloutUsage = await _usageService.GetUsageAsync(ct);
+                return BuildFallbackAnswer(
+                    request.ConversationId ?? Guid.NewGuid(),
+                    "O assistente de IA está em fase de liberação gradual e ainda não está ativo para a sua conta. Em breve estará disponível!",
+                    (int)sw.ElapsedMilliseconds,
+                    rolloutUsage);
+            }
+        }
+
         // 2. Verificação de orçamento antes de chamar o Gemini
         const decimal estimatedCallCost = 0.001m;
         var canSpend = await _usageService.CanSpendAsync(estimatedCallCost, ct);
         if (!canSpend)
         {
             sw.Stop();
+            _logger.LogWarning("AI chat blocked: Budget exceeded. TenantId={TenantId}", tenantId);
             await _usageService.RecordAsync(new AiUsageEntryDto(
                 request.ConversationId,
                 _options.Provider,
@@ -101,11 +125,14 @@ public sealed class AiChatService : IAiChatService
         }
 
         // 3. Cache de perguntas idênticas
-        var cacheKey = $"ai_chat_{request.ConversationId}_{request.Message.Trim().ToLowerInvariant()}";
+        var cacheKey = $"ai_chat_{tenantId}_{request.ConversationId}_{request.Message.Trim().ToLowerInvariant()}";
         if (_options.CacheMinutes > 0 && _memoryCache.TryGetValue(cacheKey, out ChatAnswerDto? cached) && cached != null)
         {
+            _logger.LogInformation("AI chat cache hit: TenantId={TenantId}, ConversationId={ConversationId}", tenantId, request.ConversationId);
             return cached;
         }
+
+        _logger.LogDebug("AI chat cache miss: TenantId={TenantId}, ConversationId={ConversationId}", tenantId, request.ConversationId);
 
         // 4. Carrega ou cria conversa
         var conversationTitle = request.Message.Length > 50 ? request.Message[..50] + "..." : request.Message;
@@ -250,6 +277,30 @@ public sealed class AiChatService : IAiChatService
             isFallback), ct);
 
         var finalUsage = await _usageService.GetUsageAsync(ct);
+
+        if (latencyMs > 10_000)
+        {
+            _logger.LogWarning("AI high latency alert (>10s): TenantId={TenantId}, LatencyMs={LatencyMs}", tenantId, latencyMs);
+        }
+
+        if (isFallback)
+        {
+            _logger.LogWarning("AI fallback alert: TenantId={TenantId}, ConversationId={ConversationId}, LatencyMs={LatencyMs}", tenantId, conversationId, latencyMs);
+        }
+
+        _logger.LogInformation(
+            "AI interaction completed: TenantId={TenantId}, ConversationId={ConversationId}, Provider={Provider}, Model={Model}, ToolsUsed={ToolsUsed}, InputTokens={InputTokens}, OutputTokens={OutputTokens}, LatencyMs={LatencyMs}, EstimatedCostUsd={EstimatedCostUsd}, IsFallback={IsFallback}, HistoryEnabled={HistoryEnabled}",
+            tenantId,
+            conversationId,
+            _options.Provider,
+            _options.Model,
+            string.Join(",", executedTools.Distinct()),
+            totalInputTokens,
+            totalOutputTokens,
+            latencyMs,
+            estimatedCostUsd,
+            isFallback,
+            _options.History.Enabled);
 
         var meta = new AiMetaDto(
             Provider: _options.Provider,

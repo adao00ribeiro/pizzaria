@@ -9,6 +9,7 @@ public sealed class AiOptions
     public const string SectionName = "Ai";
 
     public bool Enabled { get; set; } = false;
+    public int RolloutPercentage { get; set; } = 100;
     public string Provider { get; set; } = "Gemini";
     public string BaseUrl { get; set; } = "https://generativelanguage.googleapis.com";
     public string Model { get; set; } = "gemini-1.5-flash";
@@ -39,6 +40,11 @@ public sealed class AiOptions
         {
             throw new InvalidOperationException(
                 $"Provedor de IA '{Provider}' não é suportado no MVP. Apenas 'Gemini' é aceito.");
+        }
+
+        if (RolloutPercentage < 0 || RolloutPercentage > 100)
+        {
+            throw new InvalidOperationException("Ai:RolloutPercentage deve estar entre 0 e 100.");
         }
 
         if (Budget.Enforce && Budget.MonthlyUsdPerTenant <= 0)

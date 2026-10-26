@@ -2,7 +2,7 @@
 
 > **Feature:** Assistente de IA sobre os dados (Gemini)
 > **Duração:** 2 semanas · **Capacidade:** 20 pontos
-> **Status:** ⬜ Planejado
+> **Status:** ✅ Concluída
 > **Depende de:** IA-3 (Gemini/tools/histórico) e IA-4 (frontend)
 > **Habilita:** release em produção
 
@@ -37,13 +37,13 @@ clientes reais”, incluindo o **histórico persistido** e o **orçamento mensal
 
 ### Onda 1 — Regressão e segurança
 
-- [ ] **IA5-01** — Executar a suíte completa e consolidar baseline:
+- [x] **IA5-01** — Executar a suíte completa e consolidar baseline:
   `dotnet build`, `dotnet test`, `npm run build`, testes de frontend e smoke manual.
   **Agente:** `qa-test-specialist`.
   **Entregável:** relatório de regressão com totais e falhas.
   **Aceite:** 0 erros de build; 0 falhas; nenhuma regressão nas features de pedidos/lucro/estoque.
 
-- [ ] **IA5-02** — Auditoria de segurança da feature:
+- [x] **IA5-02** — Auditoria de segurança da feature:
   RBAC owner-only em todos os endpoints, isolamento entre tenants (incluindo conversas),
   prompt injection, PII no payload/histórico, gestão de chave do Gemini, retenção/exclusão,
   logs sem segredo e dependências vulneráveis.
@@ -51,13 +51,13 @@ clientes reais”, incluindo o **histórico persistido** e o **orçamento mensal
   **Entregável:** checklist de segurança + achados classificados.
   **Aceite:** nenhum crítico/alto aberto; médios com plano e prazo; evidência de teste para cada item.
 
-- [ ] **IA5-03** — Revisar o conjunto dourado final e a qualidade das respostas:
+- [x] **IA5-03** — Revisar o conjunto dourado final e a qualidade das respostas:
   precisão numérica, tool selection, recusa segura, clareza em PT-BR e tempo de resposta.
   **Agente:** `ai-specialist`.
   **Entregável:** relatório de avaliação com taxa de acerto e exemplos.
   **Aceite:** ≥ 95% no conjunto dourado; nenhuma resposta numérica sem tool; latência p95 documentada.
 
-- [ ] **IA5-04** — Teste de falha do Gemini, do orçamento e do histórico:
+- [x] **IA5-04** — Teste de falha do Gemini, do orçamento e do histórico:
   timeout, 429, 5xx, chave inválida, JSON inválido, teto mensal atingido, `History:Enabled=false`
   e retenção vencida.
   **Agente:** `ai-specialist` (apoio: `qa-test-specialist`).
@@ -67,7 +67,7 @@ clientes reais”, incluindo o **histórico persistido** e o **orçamento mensal
 
 ### Onda 2 — Observabilidade e operação
 
-- [ ] **IA5-05** — Instrumentar logs e métricas:
+- [x] **IA5-05** — Instrumentar logs e métricas:
   `tenantId`, `conversationId`, `provider`, `model`, `toolsUsed`, tokens, latência,
   custo estimado, cache hit/miss, fallback acionado e histórico habilitado.
   **Agente:** `backend-specialist` (apoio: `ai-specialist`).
@@ -75,21 +75,21 @@ clientes reais”, incluindo o **histórico persistido** e o **orçamento mensal
   **Aceite:** é possível responder “quanto custou o assistente hoje por tenant?” e
   “qual o p95 de latência?” sem acessar o código.
 
-- [ ] **IA5-06** — Configurar alertas operacionais:
+- [x] **IA5-06** — Configurar alertas operacionais:
   erro do Gemini > 5%, latência p95 > 10 s, orçamento mensal > 80%, taxa de fallback > 20%,
   falha na limpeza de retenção.
   **Agente:** `backend-specialist`.
   **Entregável:** regras de alerta (ou plano documentado, se a infra ainda não tiver APM).
   **Aceite:** cada alerta tem dono, limiar e ação de resposta no runbook.
 
-- [ ] **IA5-07** — Implementar rollout gradual e rollback:
+- [x] **IA5-07** — Implementar rollout gradual e rollback:
   `Ai:Enabled` + percentual por tenant/flag, kill switch e procedimento de rollback sem deploy.
   **Agente:** `backend-specialist`.
   **Entregável:** configuração de flag + runbook de rollback.
   **Aceite:** desligar a IA interrompe chamadas externas em < 1 minuto; a aplicação continua
   saudável; rollback testado.
 
-- [ ] **IA5-08** — Revisar custo e capacidade:
+- [x] **IA5-08** — Revisar custo e capacidade:
   custo médio por pergunta, projeção mensal por tenant, limites, preço do modelo Gemini e
   valor final de `Ai:Budget:MonthlyUsdPerTenant`.
   **Agente:** `ai-specialist` (apoio: `backend-specialist`).
@@ -98,33 +98,33 @@ clientes reais”, incluindo o **histórico persistido** e o **orçamento mensal
 
 ### Onda 3 — UAT e documentação
 
-- [ ] **IA5-09** — Criar e executar roteiro de UAT com o owner:
+- [x] **IA5-09** — Criar e executar roteiro de UAT com o owner:
   lucro do mês, região, produto, canal, comparação, período ambíguo, pergunta fora de escopo,
   queda de rede, resposta sem dados, retomar conversa após reload e excluir conversa.
   **Agente:** `qa-test-specialist` (apoio: `frontend-specialist`).
   **Entregável:** roteiro + evidências + aceite formal.
   **Aceite:** todos os cenários aprovados; histórico persiste e é deletável; feedback registrado.
 
-- [ ] **IA5-10** — Corrigir achados de UAT/UX (mobile, acessibilidade, textos, histórico e estados).
+- [x] **IA5-10** — Corrigir achados de UAT/UX (mobile, acessibilidade, textos, histórico e estados).
   **Agente:** `frontend-specialist` (apoio: `backend-specialist` se for contrato).
   **Entregável:** correções + re-teste.
   **Aceite:** nenhum blocker de UAT aberto; build Angular verde.
 
-- [ ] **IA5-11** — Atualizar documentação final:
+- [x] **IA5-11** — Atualizar documentação final:
   `docs/01`, `docs/02`, `docs/03`, `docs/04`, `docs/05`, `docs/07`, `docs/08`, `README.md`
   e `docs/sprints/README.md` (status, Gemini, histórico, orçamento e custos).
   **Agente:** `project-organizer` (apoio: `ai-specialist`).
   **Entregável:** docs sincronizados e links válidos.
   **Aceite:** feature descrita de ponta a ponta; nenhum caminho/endpoint obsoleto; exemplos válidos.
 
-- [ ] **IA5-12** — Sincronizar agentes e skills:
+- [x] **IA5-12** — Sincronizar agentes e skills:
   validar que `ai-specialist` está vinculado ao fluxo do `orchestrator`, que nenhum agente duplica
   escopo e que skills existentes continuam corretas.
   **Agente:** `project-organizer`.
   **Entregável:** relatório de health check de `.agents/`.
   **Aceite:** frontmatter válido; `orchestrator` cita `ai-specialist`; nenhum agente órfão/duplicado.
 
-- [ ] **IA5-13** — Preparar release notes e checklist de go-live:
+- [x] **IA5-13** — Preparar release notes e checklist de go-live:
   variáveis de ambiente do Gemini, migração, seed, feature flag, orçamento, retenção do histórico,
   monitoramento, contatos e rollback.
   **Agente:** `orchestrator` (apoio: `project-organizer`).
@@ -133,7 +133,7 @@ clientes reais”, incluindo o **histórico persistido** e o **orçamento mensal
 
 ### Onda 4 — Aceite final
 
-- [ ] **IA5-14** — Go/no-go e encerramento da feature:
+- [x] **IA5-14** — Go/no-go e encerramento da feature:
   consolidar métricas, riscos residuais, backlog pós-release e aprovação.
   **Agente:** `orchestrator`.
   **Entregável:** relatório executivo final.
@@ -196,12 +196,12 @@ flowchart TD
 
 ## Checklist de encerramento
 
-- [ ] IA5-01 a IA5-14 concluídas.
-- [ ] Regressão e segurança aprovadas.
-- [ ] Custo/latência/alertas documentados.
-- [ ] Rollout e rollback testados.
-- [ ] Histórico, retenção e exclusão aprovados.
-- [ ] UAT aprovado.
-- [ ] Docs e `.agents/` sincronizados.
-- [ ] Release notes publicadas.
-- [ ] Backlog pós-release registrado.
+- [x] IA5-01 a IA5-14 concluídas.
+- [x] Regressão e segurança aprovadas.
+- [x] Custo/latência/alertas documentados.
+- [x] Rollout e rollback testados.
+- [x] Histórico, retenção e exclusão aprovados.
+- [x] UAT aprovado.
+- [x] Docs e `.agents/` sincronizados.
+- [x] Release notes publicadas.
+- [x] Backlog pós-release registrado.

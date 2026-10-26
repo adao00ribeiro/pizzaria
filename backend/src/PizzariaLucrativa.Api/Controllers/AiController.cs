@@ -74,6 +74,7 @@ public sealed class AiController : ApiControllerBase
         return Ok(new
         {
             enabled = _options.Enabled,
+            rolloutPercentage = _options.RolloutPercentage,
             provider = _options.Provider,
             model = _options.Model,
             historyEnabled = _options.History.Enabled,

@@ -16,17 +16,20 @@ public sealed class AiUsageService : IAiUsageService
 {
     private readonly IAppDbContext _context;
     private readonly ICurrentUser _currentUser;
+    private readonly ITenantProvider _tenantProvider;
     private readonly AiOptions _options;
     private readonly ILogger<AiUsageService> _logger;
 
     public AiUsageService(
         IAppDbContext context,
         ICurrentUser currentUser,
+        ITenantProvider tenantProvider,
         IOptions<AiOptions> options,
         ILogger<AiUsageService> logger)
     {
         _context = context;
         _currentUser = currentUser;
+        _tenantProvider = tenantProvider;
         _options = options.Value;
         _logger = logger;
     }
@@ -49,6 +52,13 @@ public sealed class AiUsageService : IAiUsageService
         var budgetLimit = _options.Budget.MonthlyUsdPerTenant;
         var budgetPercentage = budgetLimit > 0 ? (monthlyCost / budgetLimit) * 100m : 0m;
         var budgetExceeded = _options.Budget.Enforce && monthlyCost >= budgetLimit;
+
+        if (budgetLimit > 0 && budgetPercentage >= _options.Budget.AlertPercentage)
+        {
+            _logger.LogWarning(
+                "AI budget alert (>={AlertPercentage}%): TenantId={TenantId}, MonthlyCost={MonthlyCost:F4}, BudgetLimit={BudgetLimit:F4}, UsedPercent={BudgetPercentage:F2}%",
+                _options.Budget.AlertPercentage, _tenantProvider.TenantId, monthlyCost, budgetLimit, budgetPercentage);
+        }
 
         return new AiUsageDto(
             InputTokens: latestRecord?.InputTokens ?? 0,

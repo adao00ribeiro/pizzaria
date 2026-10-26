@@ -64,6 +64,23 @@ public sealed class AiOptionsAndPromptTests
         Assert.Contains("MonthlyUsdPerTenant deve ser maior que zero", ex.Message);
     }
 
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(101)]
+    public void AiOptions_WhenRolloutPercentageInvalid_ThrowsClearException(int invalidPercentage)
+    {
+        var options = new AiOptions
+        {
+            Enabled = true,
+            ApiKey = "valid-key",
+            Provider = "Gemini",
+            RolloutPercentage = invalidPercentage
+        };
+
+        var ex = Assert.Throws<InvalidOperationException>(() => options.Validate());
+        Assert.Contains("RolloutPercentage", ex.Message);
+    }
+
     [Fact]
     public void AiPromptBuilder_ContainsVersionPersonaAndGuardrails()
     {

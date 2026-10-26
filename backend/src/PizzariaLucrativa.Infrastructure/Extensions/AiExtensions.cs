@@ -31,7 +31,8 @@ public static class AiExtensions
         });
 
         services.AddScoped<IAiConversationStore, AiConversationStore>();
-        services.AddHostedService<AiHistoryCleanupService>();
+        services.AddSingleton<AiHistoryCleanupService>();
+        services.AddHostedService(sp => sp.GetRequiredService<AiHistoryCleanupService>());
 
         return services;
     }

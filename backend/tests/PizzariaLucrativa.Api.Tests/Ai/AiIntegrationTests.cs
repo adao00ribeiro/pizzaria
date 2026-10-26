@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -302,5 +303,79 @@ public sealed class AiIntegrationTests : IClassFixture<ApiFactory>
         Assert.NotNull(suggestions);
         Assert.NotEmpty(suggestions);
         Assert.Contains(suggestions, s => s.Contains("lucrei", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task Rollout_WhenZeroPercent_BlocksTenantWithFallback()
+    {
+        var client = CreateClient(config =>
+        {
+            config["Ai:RolloutPercentage"] = "0";
+        });
+
+        var (token, _) = await RegisterOwnerAsync(client, "rollout-zero");
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var chatRes = await client.PostAsJsonAsync("/api/v1/ai/chat", new ChatRequestDto("Quanto lucrei no mês passado?"));
+        Assert.Equal(HttpStatusCode.OK, chatRes.StatusCode);
+
+        var answer = await chatRes.Content.ReadFromJsonAsync<ChatAnswerDto>();
+        Assert.NotNull(answer);
+        Assert.True(answer.Meta.IsFallback);
+        Assert.Contains("liberação gradual", answer.Text);
+    }
+
+    [Fact]
+    public async Task KillSwitch_WhenDisabled_BlocksAllTenantsImmediately()
+    {
+        var client = CreateClient(config =>
+        {
+            config["Ai:Enabled"] = "false";
+        });
+
+        var (token, _) = await RegisterOwnerAsync(client, "killswitch");
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var chatRes = await client.PostAsJsonAsync("/api/v1/ai/chat", new ChatRequestDto("Quanto lucrei no mês passado?"));
+        Assert.Equal(HttpStatusCode.OK, chatRes.StatusCode);
+
+        var answer = await chatRes.Content.ReadFromJsonAsync<ChatAnswerDto>();
+        Assert.NotNull(answer);
+        Assert.True(answer.Meta.IsFallback);
+        Assert.Contains("desabilitado no momento", answer.Text);
+    }
+
+    [Fact]
+    public async Task Retention_Cleanup_RemovesExpiredConversations()
+    {
+        var client = CreateClient();
+        var (token, _) = await RegisterOwnerAsync(client, "retention-test");
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        // Cria conversa válida
+        var chatRes = await client.PostAsJsonAsync("/api/v1/ai/chat", new ChatRequestDto("Quanto lucrei este mês?"));
+        Assert.Equal(HttpStatusCode.OK, chatRes.StatusCode);
+        var answer = await chatRes.Content.ReadFromJsonAsync<ChatAnswerDto>();
+        Assert.NotNull(answer);
+
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        // Envelhece a conversa no banco para 100 dias atrás (> 90 dias de retenção) via raw SQL
+        // no TenantEntity (tabela base do TPT onde UpdatedAt é persistido).
+        var pastDate = DateTime.UtcNow.AddDays(-100);
+        await db.Database.ExecuteSqlRawAsync(
+            "UPDATE TenantEntity SET UpdatedAt = {0} WHERE Id = {1}",
+            pastDate,
+            answer.ConversationId);
+
+        var cleanupService = scope.ServiceProvider.GetRequiredService<PizzariaLucrativa.Infrastructure.Ai.AiHistoryCleanupService>();
+        var removedCount = await cleanupService.RunCleanupAsync();
+
+        Assert.True(removedCount >= 1);
+
+        // Confirma que a conversa envelhecida foi removida
+        var convAfter = await db.AiConversations.IgnoreQueryFilters().FirstOrDefaultAsync(c => c.Id == answer.ConversationId);
+        Assert.Null(convAfter);
     }
 }

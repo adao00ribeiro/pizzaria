@@ -46,7 +46,7 @@ que cobrem o produto já entregue.
 | [IA-2](sprint-ia-02-analytics-e-tools.md) | Analytics e catálogo de bairros | Entregar as métricas e o catálogo que as tools vão consumir | `GET /analytics/orders/by-region` correto; CRUD de bairros; pedidos gravando região | 24 | ✅ Concluída |
 | [IA-3](sprint-ia-03-chat-gemini-e-historico.md) | Chat Gemini, tools e histórico | Ligar o Gemini com function calling, histórico persistido e orçamento | `POST /ai/chat` responde com tool real; histórico por tenant; owner-only | 28 | ✅ Concluída |
 | [IA-4](sprint-ia-04-frontend-do-assistente.md) | Frontend do assistente | Página `/ia`, histórico, gráficos, tabelas e cadastro de bairros | Owner conversa, retoma conversa anterior e vê gráficos | 27 | ✅ Concluída |
-| [IA-5](sprint-ia-05-hardening-governanca-release.md) | Hardening, governança e release | Segurança, observabilidade, rollout e documentação | Release candidate aprovado com UAT e rollback | 20 | ⬜ Planejado |
+| [IA-5](sprint-ia-05-hardening-governanca-release.md) | Hardening, governança e release | Segurança, observabilidade, rollout e documentação | Release candidate aprovado com UAT e rollback | 20 | ✅ Concluída |
 
 **Total:** 122 pontos, em 5 sprints de 2 semanas (capacidade de referência: 20–28 pts/sprint).
 
