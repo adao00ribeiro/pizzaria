@@ -4246,14 +4246,106 @@ mat-button-toggle-group {
 }
 
 @media print {
+  /* 1. Ocultar barras de navegação, sidebars, abas e ações interativas */
   .no-print,
   .shell-toolbar,
-  mat-sidenav {
+  .mat-toolbar,
+  mat-sidenav,
+  .pz-sidenav,
+  .mat-drawer,
+  .mat-mdc-tab-header,
+  .mat-tab-header,
+  .mat-mdc-paginator,
+  .mat-paginator,
+  .mat-column-actions,
+  .cell-actions {
     display: none !important;
   }
+
+  /* 2. Reset estrutural de página e remoção do offset gerado pelo mat-sidenav */
+  html,
+  body {
+    width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    overflow: visible !important;
+  }
+
+  /* Sobrescreve o inline style (ex.: 'margin-left: 280px') injetado dinamicamente pelo Angular Material Sidenav */
+  mat-sidenav-container,
+  .mat-drawer-container,
+  .shell-container {
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+  }
+
+  mat-sidenav-content,
+  .mat-drawer-content,
+  .sidenav-content,
+  main.sidenav-content {
+    margin: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    transform: none !important;
+  }
+
+  .page {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .mat-mdc-tab-body-wrapper,
+  .mat-mdc-tab-body-content,
+  .mat-mdc-tab-body {
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    transform: none !important;
+  }
+
+  .table-wrap,
+  .print-table-wrap {
+    overflow: visible !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* 3. Centralização e ajuste da Comanda Térmica (80mm) */
+  .pz-ticket-wrapper {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: flex-start !important;
+  }
+
   .pz-thermal-ticket {
-    border: none;
-    padding: 0;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 auto !important;
+    width: 80mm !important;
+    max-width: 80mm !important;
+    box-sizing: border-box !important;
+    background: #ffffff !important;
+    color: #000000 !important;
   }
 }
 

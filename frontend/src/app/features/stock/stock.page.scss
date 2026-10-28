@@ -1,1 +1,514 @@
-/* Estilos do estoque usam as classes globais (.form-row, .stock-low, .pz-chip-*). */
+/* Estilos da tela de estoque e relatório de compras */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 16px;
+
+  .title-wrap {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+/* Barra de Filtros da Reposição */
+.replenishment-filter-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 16px 0;
+
+  .search-field {
+    flex: 1 1 260px;
+    max-width: 380px;
+  }
+
+  .urgency-field {
+    flex: 0 0 200px;
+  }
+
+  .toggle-needed {
+    margin-left: 8px;
+  }
+
+  .filter-actions-spacer {
+    flex: 1 1 auto;
+  }
+}
+
+/* KPI Cards */
+.replenishment-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+
+  .kpi-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 18px;
+    border-radius: 12px;
+    background: var(--pz-bg-card, #ffffff);
+    border: 1px solid var(--pz-border, #e2e8f0);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+
+    .kpi-icon-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      flex-shrink: 0;
+
+      &.primary {
+        background: rgba(198, 40, 40, 0.1);
+        color: #c62828;
+      }
+      &.danger {
+        background: rgba(220, 38, 38, 0.1);
+        color: #dc2626;
+      }
+      &.warning {
+        background: rgba(217, 119, 6, 0.12);
+        color: #d97706;
+      }
+      &.info {
+        background: rgba(2, 132, 199, 0.1);
+        color: #0284c7;
+      }
+      &.success {
+        background: rgba(5, 150, 105, 0.12);
+        color: #059669;
+      }
+    }
+
+    .kpi-data {
+      display: flex;
+      flex-direction: column;
+
+      .kpi-label {
+        font-size: 0.75rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--pz-text-muted, #64748b);
+      }
+
+      .kpi-value {
+        font-size: 1.35rem;
+        font-weight: 700;
+        line-height: 1.2;
+        margin-top: 2px;
+      }
+
+      .kpi-subtext {
+        font-size: 0.72rem;
+        color: var(--pz-text-muted, #94a3b8);
+        margin-top: 2px;
+      }
+    }
+  }
+}
+
+/* Helpers de cores de texto */
+.text-danger {
+  color: #dc2626 !important;
+}
+.text-warning {
+  color: #d97706 !important;
+}
+.text-info {
+  color: #0284c7 !important;
+}
+.text-success {
+  color: #059669 !important;
+}
+.text-muted {
+  color: #64748b !important;
+}
+
+/* Tabela de Reposição */
+.replenishment-table {
+  .check-col {
+    width: 48px;
+    text-align: center;
+  }
+
+  .ingredient-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .ingredient-name {
+      font-weight: 600;
+    }
+
+    .ingredient-unit-badge {
+      font-size: 0.72rem;
+      padding: 1px 6px;
+      border-radius: 4px;
+      background: rgba(0, 0, 0, 0.05);
+      color: #64748b;
+    }
+  }
+
+  .item-struck {
+    .ingredient-name {
+      text-decoration: line-through;
+      color: #94a3b8;
+    }
+  }
+
+  .badge-deficit {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  .purchase-suggestion {
+    display: flex;
+    flex-direction: column;
+
+    .packages-highlight {
+      font-size: 0.9rem;
+      color: var(--pz-text-main, #0f172a);
+    }
+
+    .total-quantity-hint {
+      font-size: 0.78rem;
+      color: #64748b;
+    }
+  }
+
+  .cost-info {
+    display: flex;
+    flex-direction: column;
+
+    .cost-total {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: #059669;
+    }
+
+    .cost-unit-hint {
+      font-size: 0.76rem;
+      color: #64748b;
+    }
+  }
+
+  .cell-actions {
+    text-align: right;
+
+    .btn-quick-replenish {
+      min-width: 110px;
+    }
+  }
+}
+
+/* Chips de Urgência */
+.pz-chip-urgency {
+  font-size: 0.75rem;
+  font-weight: 600;
+  min-height: 28px;
+
+  &.critical {
+    --mdc-chip-elevated-container-color: #fee2e2;
+    --mdc-chip-label-text-color: #991b1b;
+    --mdc-chip-outline-color: #fca5a5;
+    background-color: #fee2e2 !important;
+    color: #991b1b !important;
+    border: 1px solid #fca5a5;
+  }
+
+  &.low {
+    --mdc-chip-elevated-container-color: #ffedd5;
+    --mdc-chip-label-text-color: #9a3412;
+    --mdc-chip-outline-color: #fdba74;
+    background-color: #ffedd5 !important;
+    color: #9a3412 !important;
+    border: 1px solid #fdba74;
+  }
+
+  &.warning {
+    --mdc-chip-elevated-container-color: #fef3c7;
+    --mdc-chip-label-text-color: #92400e;
+    --mdc-chip-outline-color: #fcd34d;
+    background-color: #fef3c7 !important;
+    color: #92400e !important;
+    border: 1px solid #fcd34d;
+  }
+
+  &.normal {
+    --mdc-chip-elevated-container-color: #dcfce7;
+    --mdc-chip-label-text-color: #166534;
+    --mdc-chip-outline-color: #86efac;
+    background-color: #dcfce7 !important;
+    color: #166534 !important;
+    border: 1px solid #86efac;
+  }
+
+  .mat-icon {
+    font-size: 16px !important;
+    width: 16px !important;
+    height: 16px !important;
+  }
+}
+
+:host-context(.dark-theme),
+:host-context([data-theme='dark']) {
+  .pz-chip-urgency {
+    &.critical {
+      background-color: rgba(239, 68, 68, 0.2) !important;
+      color: #fca5a5 !important;
+      border-color: rgba(239, 68, 68, 0.4) !important;
+    }
+    &.low {
+      background-color: rgba(249, 115, 22, 0.2) !important;
+      color: #fdba74 !important;
+      border-color: rgba(249, 115, 22, 0.4) !important;
+    }
+    &.warning {
+      background-color: rgba(245, 158, 11, 0.2) !important;
+      color: #fde047 !important;
+      border-color: rgba(245, 158, 11, 0.4) !important;
+    }
+    &.normal {
+      background-color: rgba(34, 197, 94, 0.2) !important;
+      color: #86efac !important;
+      border-color: rgba(34, 197, 94, 0.4) !important;
+    }
+  }
+
+  .badge-deficit {
+    background: rgba(239, 68, 68, 0.25) !important;
+    color: #fca5a5 !important;
+  }
+
+  .ingredient-unit-badge {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: #cbd5e1 !important;
+  }
+
+  .replenishment-table .purchase-suggestion .packages-highlight {
+    color: #f8fafc !important;
+  }
+}
+
+/* Ocultar elementos exclusivos de impressão na visualização em tela */
+.print-only {
+  display: none !important;
+}
+
+/* ===========================================================================
+   ESTILOS PARA IMPRESSÃO (@media print)
+   =========================================================================== */
+@media print {
+  :host {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Oculta tudo que não faz parte do relatório impresso */
+  .no-print,
+  .mat-mdc-tab-header,
+  .page-header,
+  .filter-row,
+  .shell-toolbar,
+  mat-sidenav,
+  .cell-actions,
+  .mat-column-actions {
+    display: none !important;
+  }
+
+  /* Exibe elementos timbrados */
+  .print-only {
+    display: block !important;
+  }
+
+  /* Reset de layout da página para papel */
+  body,
+  .page,
+  .mat-mdc-tab-body-wrapper,
+  .mat-mdc-tab-body-content {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    overflow: visible !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .print-doc-header {
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #000000;
+
+    .print-brand-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+
+      .print-title {
+        font-size: 16pt;
+        font-weight: 800;
+        margin: 0 0 4px 0;
+        text-transform: uppercase;
+        color: #000000;
+      }
+
+      .print-subtitle {
+        font-size: 10.5pt;
+        margin: 0;
+        color: #333333;
+      }
+
+      .print-timestamp {
+        font-size: 9pt;
+        text-align: right;
+        color: #555555;
+      }
+    }
+
+    .print-kpis-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-top: 12px;
+      padding: 8px 12px;
+      background: #f3f4f6;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      font-size: 9.5pt;
+
+      .print-kpi-item {
+        display: flex;
+        gap: 6px;
+
+        span {
+          color: #4b5563;
+        }
+
+        strong {
+          color: #111827;
+        }
+      }
+
+      .print-total-cost {
+        margin-left: auto;
+        font-size: 10.5pt;
+
+        strong {
+          color: #047857;
+        }
+      }
+    }
+  }
+
+  /* Tabela Impressa */
+  .print-table-wrap {
+    overflow: visible !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  table.replenishment-table {
+    width: 100% !important;
+    max-width: 100% !important;
+    table-layout: auto !important;
+    border-collapse: collapse !important;
+    font-size: 9pt !important;
+    color: #000000 !important;
+
+    th,
+    td {
+      border: 1px solid #9ca3af !important;
+      padding: 5px 6px !important;
+      color: #000000 !important;
+      background: #ffffff !important;
+      vertical-align: middle;
+    }
+
+    th {
+      background-color: #f3f4f6 !important;
+      font-weight: 700 !important;
+      text-transform: uppercase;
+      font-size: 8pt !important;
+    }
+
+    th.mat-column-check,
+    td.mat-column-check {
+      width: 28px !important;
+      min-width: 28px !important;
+      max-width: 28px !important;
+      text-align: center !important;
+      padding: 2px !important;
+    }
+
+    th.mat-column-actions,
+    td.mat-column-actions {
+      display: none !important;
+    }
+
+    tr {
+      page-break-inside: avoid;
+    }
+
+    .print-box-square {
+      display: inline-block !important;
+      width: 13px;
+      height: 13px;
+      border: 1.5px solid #000000;
+      border-radius: 2px;
+      vertical-align: middle;
+      margin: 0 auto;
+    }
+  }
+
+  /* Rodapé Impresso */
+  .print-doc-footer {
+    margin-top: 32px;
+    page-break-inside: avoid;
+
+    .print-signature-row {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 40px;
+      margin-bottom: 24px;
+
+      .signature-line {
+        width: 240px;
+        text-align: center;
+
+        .line {
+          border-top: 1px solid #000000;
+          margin-bottom: 6px;
+        }
+
+        span {
+          font-size: 9pt;
+          color: #4b5563;
+        }
+      }
+    }
+
+    .print-watermark {
+      font-size: 8pt;
+      text-align: center;
+      color: #9ca3af;
+      margin: 0;
+    }
+  }
+}

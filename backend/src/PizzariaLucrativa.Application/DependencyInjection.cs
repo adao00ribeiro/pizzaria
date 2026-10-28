@@ -29,6 +29,7 @@ public static class ApplicationServiceCollectionExtensions
         services.AddScoped<IAlertService, AlertService>();
         services.AddScoped<IStockService, StockService>();
         services.AddScoped<IStockConsumptionService, StockConsumptionService>();
+        services.AddScoped<IStockReplenishmentService, StockReplenishmentService>();
         services.AddScoped<IOrderService, OrderService>();
         services.AddScoped<IKitchenService, KitchenService>();
         services.AddScoped<IReportService, ReportService>();

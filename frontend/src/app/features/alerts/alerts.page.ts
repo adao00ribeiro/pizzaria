@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DatePipe } from '@angular/common';
 import { ReactiveFormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
@@ -31,6 +32,7 @@ import { ReplenishStockDialog, ReplenishStockDialogData } from '../ingredients/r
   standalone: true,
   imports: [
     ReactiveFormsModule,
+    RouterLink,
     MatTableModule,
     MatFormFieldModule,
     MatSelectModule,

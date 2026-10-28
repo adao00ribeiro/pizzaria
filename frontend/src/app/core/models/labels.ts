@@ -10,6 +10,7 @@ import {
   StockMovementType,
   Unit,
 } from './common.models';
+import { StockReplenishmentUrgency } from './stock.models';
 
 /** Rótulos em português para os valores que chegam como enum string da API. */
 
@@ -79,4 +80,11 @@ export const ALLOCATION_LABELS: Record<AllocationType, string> = {
 export const ITEM_TYPE_LABELS: Record<'Ingredient' | 'Preparation', string> = {
   Ingredient: 'Ingrediente',
   Preparation: 'Preparo',
+};
+
+export const STOCK_REPLENISHMENT_URGENCY_LABELS: Record<StockReplenishmentUrgency, string> = {
+  Critical: 'Crítico (Esgotado)',
+  Low: 'Estoque Baixo',
+  Warning: 'Alerta Preventivo',
+  Normal: 'Estoque Regular',
 };

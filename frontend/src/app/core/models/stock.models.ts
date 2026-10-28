@@ -29,3 +29,37 @@ export interface StockMovementRequest {
   unitCost?: number | null;
   note?: string | null;
 }
+
+export type StockReplenishmentUrgency = 'Critical' | 'Low' | 'Warning' | 'Normal';
+
+export interface StockReplenishmentItem {
+  ingredientId: string;
+  ingredientName: string;
+  unit: Unit;
+  currentStock: number;
+  minimumStock: number;
+  deficitQuantity: number;
+  suggestedPackagesToBuy: number;
+  suggestedReplenishmentQuantity: number;
+  purchaseQuantity: number;
+  purchasePrice: number;
+  unitCost: number;
+  estimatedCost: number;
+  urgency: StockReplenishmentUrgency;
+}
+
+export interface StockReplenishmentReport {
+  items: StockReplenishmentItem[];
+  totalItemsNeedingReplenishment: number;
+  criticalCount: number;
+  lowCount: number;
+  warningCount: number;
+  totalEstimatedCost: number;
+  generatedAt: string;
+}
+
+export interface StockReplenishmentFilter {
+  urgency?: StockReplenishmentUrgency | '';
+  onlyNeedingReplenishment?: boolean;
+  search?: string;
+}

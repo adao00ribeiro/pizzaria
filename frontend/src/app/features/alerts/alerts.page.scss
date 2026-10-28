@@ -1,1 +1,16 @@
-/* Estilos de alertas usam as classes globais (.filter-row, .pz-chip-*). */
+/* Estilos de alertas com botão para lista de reposição */
+.header-with-action {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.btn-shopping-list {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}

@@ -1,10 +1,23 @@
 <div class="page">
-  <div class="page-header">
-    <h1 class="page-title">Estoque</h1>
+  <div class="page-header no-print">
+    <div class="title-wrap">
+      <h1 class="page-title">Estoque</h1>
+      <p class="hint-text" style="margin-top: -6px;">
+        Gestão de saldos, movimentações e lista de compras para reposição de insumos.
+      </p>
+    </div>
+    @if (activeTab() === 2) {
+      <div class="header-actions">
+        <button mat-flat-button color="primary" type="button" (click)="printReport()">
+          <mat-icon>print</mat-icon>
+          Imprimir Lista de Compras
+        </button>
+      </div>
+    }
   </div>
 
   <mat-tab-group [selectedIndex]="activeTab()" (selectedIndexChange)="onTab($event)">
-    <!-- ============================== Saldos ============================== -->
+    <!-- ============================== Aba 1: Saldos ============================== -->
     <mat-tab label="Saldos">
       <div class="filter-row">
         <mat-slide-toggle
@@ -75,7 +88,7 @@
       }
     </mat-tab>
 
-    <!-- ============================ Movimentos ============================ -->
+    <!-- ============================ Aba 2: Movimentos ============================ -->
     <mat-tab label="Movimentos">
       <mat-card class="section-card">
         <mat-card-content>
@@ -189,6 +202,336 @@
           (page)="onMovementsPage($event)"
           aria-label="Paginação de movimentos"
         />
+      }
+    </mat-tab>
+
+    <!-- ======================= Aba 3: Lista de Compras ======================= -->
+    <mat-tab label="Lista de Compras / Reposição">
+      <!-- Bloco Timbrado para Impressão (aparece apenas em window.print) -->
+      <div class="print-doc-header print-only">
+        <div class="print-brand-row">
+          <div>
+            <h1 class="print-title">LISTA DE COMPRAS PARA REPOSIÇÃO DE ESTOQUE</h1>
+            <p class="print-subtitle">
+              Pizzaria: <strong>{{ tenant.name() || 'Pizzaria Lucrativa' }}</strong>
+            </p>
+          </div>
+          <div class="print-timestamp">
+            <span>Emissão:</span>
+            <strong>{{ (replenishmentReport()?.generatedAt || '') | date: 'dd/MM/yyyy HH:mm' }}</strong>
+          </div>
+        </div>
+
+        <div class="print-kpis-bar">
+          <div class="print-kpi-item">
+            <span>Itens para Comprar:</span>
+            <strong>{{ replenishmentReport()?.totalItemsNeedingReplenishment ?? 0 }}</strong>
+          </div>
+          <div class="print-kpi-item">
+            <span>Críticos (Zerados):</span>
+            <strong>{{ replenishmentReport()?.criticalCount ?? 0 }}</strong>
+          </div>
+          <div class="print-kpi-item">
+            <span>Estoque Baixo:</span>
+            <strong>{{ replenishmentReport()?.lowCount ?? 0 }}</strong>
+          </div>
+          <div class="print-kpi-item print-total-cost">
+            <span>Custo Total Estimado:</span>
+            <strong>{{ (replenishmentReport()?.totalEstimatedCost ?? 0) | brl }}</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Barra de Filtros & Ações da Tela (ocultados na impressão) -->
+      <div class="filter-row replenishment-filter-bar no-print">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="search-field">
+          <mat-label>Buscar ingrediente</mat-label>
+          <input
+            matInput
+            [formControl]="replenishmentSearch"
+            placeholder="Ex.: Farinha, Muçarela, Bacon..."
+          />
+          <mat-icon matPrefix>search</mat-icon>
+          @if (replenishmentSearch.value) {
+            <button mat-icon-button matSuffix type="button" aria-label="Limpar busca" (click)="replenishmentSearch.setValue('')">
+              <mat-icon>close</mat-icon>
+            </button>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="urgency-field">
+          <mat-label>Urgência</mat-label>
+          <mat-select [formControl]="replenishmentUrgency">
+            <mat-option value="">Todas as urgências</mat-option>
+            <mat-option value="Critical">Crítico (Esgotado)</mat-option>
+            <mat-option value="Low">Estoque Baixo</mat-option>
+            <mat-option value="Warning">Alerta Preventivo</mat-option>
+            <mat-option value="Normal">Estoque Regular</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-slide-toggle [formControl]="replenishmentOnlyNeeded" color="warn" class="toggle-needed">
+          Apenas com necessidade de reposição
+        </mat-slide-toggle>
+
+        <div class="filter-actions-spacer"></div>
+
+        <button mat-stroked-button type="button" (click)="loadReplenishmentReport()" [disabled]="replenishmentLoading()">
+          <mat-icon>refresh</mat-icon>
+          Atualizar
+        </button>
+
+        <button mat-flat-button color="primary" type="button" (click)="printReport()">
+          <mat-icon>print</mat-icon>
+          Imprimir Lista
+        </button>
+      </div>
+
+      <!-- Cards de Resumo / KPIs (visíveis na tela) -->
+      @if (replenishmentReport(); as report) {
+        <div class="kpi-grid replenishment-kpis no-print">
+          <div class="kpi-card">
+            <div class="kpi-icon-wrap primary">
+              <mat-icon>shopping_bag</mat-icon>
+            </div>
+            <div class="kpi-data">
+              <span class="kpi-label">Itens a Repor</span>
+              <span class="kpi-value">{{ report.totalItemsNeedingReplenishment }}</span>
+              <span class="kpi-subtext">necessitam compra imediata</span>
+            </div>
+          </div>
+
+          <div class="kpi-card danger-card">
+            <div class="kpi-icon-wrap danger">
+              <mat-icon>dangerous</mat-icon>
+            </div>
+            <div class="kpi-data">
+              <span class="kpi-label">Críticos (Esgotados)</span>
+              <span class="kpi-value text-danger">{{ report.criticalCount }}</span>
+              <span class="kpi-subtext">estoque zerado ou negativo</span>
+            </div>
+          </div>
+
+          <div class="kpi-card warning-card">
+            <div class="kpi-icon-wrap warning">
+              <mat-icon>warning</mat-icon>
+            </div>
+            <div class="kpi-data">
+              <span class="kpi-label">Estoque Baixo</span>
+              <span class="kpi-value text-warning">{{ report.lowCount }}</span>
+              <span class="kpi-subtext">abaixo do estoque mínimo</span>
+            </div>
+          </div>
+
+          <div class="kpi-card info-card">
+            <div class="kpi-icon-wrap info">
+              <mat-icon>info</mat-icon>
+            </div>
+            <div class="kpi-data">
+              <span class="kpi-label">Alerta Preventivo</span>
+              <span class="kpi-value text-info">{{ report.warningCount }}</span>
+              <span class="kpi-subtext">próximo do limite de segurança</span>
+            </div>
+          </div>
+
+          <div class="kpi-card success-card">
+            <div class="kpi-icon-wrap success">
+              <mat-icon>payments</mat-icon>
+            </div>
+            <div class="kpi-data">
+              <span class="kpi-label">Custo Estimado Total</span>
+              <span class="kpi-value text-success">{{ report.totalEstimatedCost | brl }}</span>
+              <span class="kpi-subtext">investimento total sugerido</span>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Conteúdo da Tabela / Empty / Loading -->
+      @if (replenishmentLoading()) {
+        <div class="loading">
+          <mat-spinner diameter="40" />
+        </div>
+      } @else if (!replenishmentReport() || replenishmentReport()!.items.length === 0) {
+        <div class="empty-state">
+          <mat-icon>task_alt</mat-icon>
+          <p class="empty-title">Nenhum produto precisando de reposição</p>
+          <p>
+            @if (replenishmentOnlyNeeded.value) {
+              Excelente! Todos os ingredientes estão com estoque regular acima do mínimo de segurança.
+            } @else {
+              Nenhum item corresponde aos filtros selecionados.
+            }
+          </p>
+        </div>
+      } @else {
+        <div class="table-wrap print-table-wrap">
+          <table mat-table [dataSource]="replenishmentReport()!.items" class="full-width replenishment-table">
+            <!-- Checkbox para conferência / prancheta -->
+            <ng-container matColumnDef="check">
+              <th mat-header-cell *matHeaderCellDef class="check-col">
+                <span class="no-print">Check</span>
+                <span class="print-only">[ ]</span>
+              </th>
+              <td mat-cell *matCellDef="let item" class="check-col">
+                <div class="no-print">
+                  <mat-checkbox
+                    [checked]="isItemChecked(item.ingredientId)"
+                    (change)="toggleCheckItem(item.ingredientId)"
+                    color="primary"
+                    aria-label="Marcar item comprado"
+                  />
+                </div>
+                <div class="print-only print-box-square"></div>
+              </td>
+            </ng-container>
+
+            <!-- Insumo -->
+            <ng-container matColumnDef="ingredientName">
+              <th mat-header-cell *matHeaderCellDef>Insumo / Ingrediente</th>
+              <td mat-cell *matCellDef="let item" [class.item-struck]="isItemChecked(item.ingredientId)">
+                <div class="ingredient-info">
+                  <span class="ingredient-name">{{ item.ingredientName }}</span>
+                  <span class="ingredient-unit-badge">{{ formatUnit(item.unit) }}</span>
+                </div>
+              </td>
+            </ng-container>
+
+            <!-- Estoque Atual -->
+            <ng-container matColumnDef="currentStock">
+              <th mat-header-cell *matHeaderCellDef>Estoque Atual</th>
+              <td mat-cell *matCellDef="let item" [class.text-danger]="item.currentStock <= 0">
+                <strong>{{ item.currentStock }}</strong> {{ item.unit }}
+              </td>
+            </ng-container>
+
+            <!-- Estoque Mínimo -->
+            <ng-container matColumnDef="minimumStock">
+              <th mat-header-cell *matHeaderCellDef>Mínimo</th>
+              <td mat-cell *matCellDef="let item">
+                {{ item.minimumStock }} {{ item.unit }}
+              </td>
+            </ng-container>
+
+            <!-- Déficit -->
+            <ng-container matColumnDef="deficitQuantity">
+              <th mat-header-cell *matHeaderCellDef>Déficit</th>
+              <td mat-cell *matCellDef="let item">
+                @if (item.deficitQuantity > 0) {
+                  <span class="badge-deficit">-{{ item.deficitQuantity }} {{ item.unit }}</span>
+                } @else {
+                  <span class="text-muted">0 {{ item.unit }}</span>
+                }
+              </td>
+            </ng-container>
+
+            <!-- Sugestão de Compra -->
+            <ng-container matColumnDef="suggestedPurchase">
+              <th mat-header-cell *matHeaderCellDef>Sugestão de Compra</th>
+              <td mat-cell *matCellDef="let item">
+                @if (item.suggestedPackagesToBuy > 0) {
+                  <div class="purchase-suggestion">
+                    <span class="packages-highlight">
+                      <strong>{{ item.suggestedPackagesToBuy }}</strong>
+                      {{ item.suggestedPackagesToBuy === 1 ? 'embalagem' : 'embalagens' }}
+                      de {{ item.purchaseQuantity }} {{ item.unit }}
+                    </span>
+                    <span class="total-quantity-hint">
+                      (= {{ item.suggestedReplenishmentQuantity }} {{ item.unit }})
+                    </span>
+                  </div>
+                } @else {
+                  <span class="text-muted">Estoque adequado</span>
+                }
+              </td>
+            </ng-container>
+
+            <!-- Custo Estimado -->
+            <ng-container matColumnDef="estimatedCost">
+              <th mat-header-cell *matHeaderCellDef>Custo Estimado</th>
+              <td mat-cell *matCellDef="let item">
+                <div class="cost-info">
+                  <span class="cost-total">{{ item.estimatedCost | brl }}</span>
+                  @if (item.purchasePrice > 0 && item.suggestedPackagesToBuy > 0) {
+                    <span class="cost-unit-hint">{{ item.purchasePrice | brl }}/emb.</span>
+                  }
+                </div>
+              </td>
+            </ng-container>
+
+            <!-- Urgência -->
+            <ng-container matColumnDef="urgency">
+              <th mat-header-cell *matHeaderCellDef>Urgência</th>
+              <td mat-cell *matCellDef="let item">
+                @switch (item.urgency) {
+                  @case ('Critical') {
+                    <mat-chip class="pz-chip-urgency critical">
+                      <mat-icon matChipAvatar>dangerous</mat-icon>
+                      Crítico (Esgotado)
+                    </mat-chip>
+                  }
+                  @case ('Low') {
+                    <mat-chip class="pz-chip-urgency low">
+                      <mat-icon matChipAvatar>warning</mat-icon>
+                      Estoque Baixo
+                    </mat-chip>
+                  }
+                  @case ('Warning') {
+                    <mat-chip class="pz-chip-urgency warning">
+                      <mat-icon matChipAvatar>info</mat-icon>
+                      Alerta Preventivo
+                    </mat-chip>
+                  }
+                  @default {
+                    <mat-chip class="pz-chip-urgency normal">
+                      <mat-icon matChipAvatar>check_circle</mat-icon>
+                      Estoque Regular
+                    </mat-chip>
+                  }
+                }
+              </td>
+            </ng-container>
+
+            <!-- Ações -->
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef class="cell-actions no-print">Ações</th>
+              <td mat-cell *matCellDef="let item" class="cell-actions no-print">
+                <button
+                  mat-stroked-button
+                  color="primary"
+                  type="button"
+                  (click)="openReplenish(item)"
+                  matTooltip="Registrar entrada/compra deste insumo"
+                  class="btn-quick-replenish"
+                >
+                  <mat-icon>add_shopping_cart</mat-icon>
+                  Dar Entrada
+                </button>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="replenishmentColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: replenishmentColumns"></tr>
+          </table>
+        </div>
+
+        <!-- Rodapé Timbrado para Impressão -->
+        <div class="print-doc-footer print-only">
+          <div class="print-signature-row">
+            <div class="signature-line">
+              <div class="line"></div>
+              <span>Responsável pelas Compras</span>
+            </div>
+            <div class="signature-line">
+              <div class="line"></div>
+              <span>Conferência de Estoque</span>
+            </div>
+          </div>
+          <p class="print-watermark">
+            Relatório gerado pelo Sistema Pizzaria Lucrativa em
+            {{ (replenishmentReport()?.generatedAt || '') | date: 'dd/MM/yyyy HH:mm' }}
+          </p>
+        </div>
       }
     </mat-tab>
   </mat-tab-group>

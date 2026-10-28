@@ -4,6 +4,8 @@ using PizzariaLucrativa.Api.Controllers.Shared;
 using PizzariaLucrativa.Application.DTOs;
 using PizzariaLucrativa.Application.Interfaces;
 
+using PizzariaLucrativa.Domain.Enums;
+
 namespace PizzariaLucrativa.Api.Controllers;
 
 /// <summary>Saldos e movimentações de estoque dos insumos (docs/07 §12).</summary>
@@ -12,8 +14,13 @@ namespace PizzariaLucrativa.Api.Controllers;
 public sealed class StockController : ApiControllerBase
 {
     private readonly IStockService _stock;
+    private readonly IStockReplenishmentService _replenishmentService;
 
-    public StockController(IStockService stock) => _stock = stock;
+    public StockController(IStockService stock, IStockReplenishmentService replenishmentService)
+    {
+        _stock = stock;
+        _replenishmentService = replenishmentService;
+    }
 
     /// <summary>Saldo por ingrediente; <c>belowMinimum=true</c> filtra os abaixo do mínimo.</summary>
     [HttpGet("balances")]
@@ -35,4 +42,14 @@ public sealed class StockController : ApiControllerBase
         [FromQuery] int pageSize = 20,
         CancellationToken ct = default)
         => _stock.MovementsAsync(ingredientId, new PagedRequest(page, pageSize), ct);
+
+    /// <summary>Relatório de reposição e lista de compras para suprir déficit de estoque de insumos.</summary>
+    [HttpGet("replenishment-report")]
+    public Task<StockReplenishmentReportDto> ReplenishmentReport(
+        [FromQuery] StockReplenishmentUrgency? urgency,
+        [FromQuery] bool? onlyNeedingReplenishment,
+        [FromQuery] string? search,
+        CancellationToken ct = default)
+        => _replenishmentService.GetReplenishmentReportAsync(
+            new StockReplenishmentFilter(urgency, onlyNeedingReplenishment, search), ct);
 }

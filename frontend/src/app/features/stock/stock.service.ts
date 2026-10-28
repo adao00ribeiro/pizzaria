@@ -4,7 +4,13 @@ import { Observable, map } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 import { PAGE_SIZE, PagedResult } from '../../core/models/common.models';
-import { StockBalance, StockMovement, StockMovementRequest } from '../../core/models/stock.models';
+import {
+  StockBalance,
+  StockMovement,
+  StockMovementRequest,
+  StockReplenishmentFilter,
+  StockReplenishmentReport,
+} from '../../core/models/stock.models';
 import { normalizePage } from '../../core/utils/page.util';
 
 /** Saldos e movimentos de estoque (docs/07 §12). */
@@ -35,5 +41,19 @@ export class StockService {
 
   createMovement(body: StockMovementRequest): Observable<unknown> {
     return this.http.post(`${this.base}/movements`, body);
+  }
+
+  getReplenishmentReport(filter?: StockReplenishmentFilter): Observable<StockReplenishmentReport> {
+    let httpParams = new HttpParams();
+    if (filter?.urgency) {
+      httpParams = httpParams.set('urgency', filter.urgency);
+    }
+    if (filter?.onlyNeedingReplenishment !== undefined) {
+      httpParams = httpParams.set('onlyNeedingReplenishment', String(filter.onlyNeedingReplenishment));
+    }
+    if (filter?.search?.trim()) {
+      httpParams = httpParams.set('search', filter.search.trim());
+    }
+    return this.http.get<StockReplenishmentReport>(`${this.base}/replenishment-report`, { params: httpParams });
   }
 }

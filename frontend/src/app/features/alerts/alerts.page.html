@@ -1,11 +1,25 @@
 <div class="page">
-  <div class="page-header">
-    <h1 class="page-title">Alertas</h1>
+  <div class="page-header header-with-action">
+    <div>
+      <h1 class="page-title">Alertas</h1>
+      <p class="hint-text" style="margin-top: -6px;">
+        Itens com margem abaixo do alvo e ingredientes abaixo do estoque mínimo.
+      </p>
+    </div>
+    <div class="header-actions">
+      <a
+        mat-flat-button
+        color="primary"
+        routerLink="/stock"
+        [queryParams]="{ tab: 'replenishment' }"
+        matTooltip="Acessar e imprimir lista de compras para reposição de estoque"
+        class="btn-shopping-list"
+      >
+        <mat-icon>shopping_cart_checkout</mat-icon>
+        Lista de Compras / Reposição
+      </a>
+    </div>
   </div>
-
-  <p class="hint-text" style="margin-top: -8px;">
-    Itens com margem abaixo do alvo e ingredientes abaixo do estoque mínimo.
-  </p>
 
   <div class="filter-row">
     <mat-form-field appearance="outline" subscriptSizing="dynamic">
