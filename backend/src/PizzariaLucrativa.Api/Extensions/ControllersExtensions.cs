@@ -23,6 +23,7 @@ public static class ControllersExtensions
                 options.JsonSerializerOptions.Converters.Add(new LowerCaseEnumConverter<ChartValueFormat>());
                 options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
                 options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+                options.JsonSerializerOptions.NumberHandling = JsonNumberHandling.AllowReadingFromString;
             });
 
         return services;

@@ -19,10 +19,14 @@ public sealed class BeveragesController : ApiControllerBase
     public Task<IReadOnlyList<BeverageDto>> List(CancellationToken ct = default)
         => _beverages.ListAsync(ct);
 
-    /// <summary>Atualiza o preço de compra e/ou multiplicador de markup da bebida.</summary>
+    /// <summary>Atualiza o preço de compra, multiplicador de markup e estoque da bebida.</summary>
     [HttpPut("{id:guid}/markup")]
-    public Task<BeverageDto> UpdateMarkup(Guid id, MarkupInput input, CancellationToken ct = default)
-        => _beverages.UpdateMarkupAsync(id, input.MarkupMultiplier, input.PurchasePrice, ct);
+    public Task<BeverageDto> UpdateMarkup(Guid id, [FromBody] MarkupInput input, CancellationToken ct = default)
+        => _beverages.UpdateMarkupAsync(id, input.MarkupMultiplier, input.PurchasePrice, input.CurrentStock, input.MinimumStock, ct);
 
-    public sealed record MarkupInput(decimal MarkupMultiplier, decimal? PurchasePrice = null);
+    public sealed record MarkupInput(
+        decimal MarkupMultiplier,
+        decimal? PurchasePrice = null,
+        decimal? CurrentStock = null,
+        decimal? MinimumStock = null);
 }

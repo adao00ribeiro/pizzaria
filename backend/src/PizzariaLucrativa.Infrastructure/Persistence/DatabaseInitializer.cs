@@ -32,6 +32,9 @@ public static class DatabaseInitializer
         // Backfill do slug público em tenants antigos (docs/10, Sprint 1).
         await BackfillTenantSlugsAsync(db, logger);
 
+        // Garante insumos de estoque para bebidas que não possuem (docs/10, Sprint 2).
+        await EnsureBeverageStockIngredientsAsync(db, logger);
+
         if (seedDemo)
         {
             var seeder = scope.ServiceProvider.GetRequiredService<DemoSeeder>();
@@ -86,5 +89,41 @@ public static class DatabaseInitializer
 
         await db.SaveChangesAsync();
         logger.LogInformation("Slug público preenchido em {Count} pizzaria(s).", tenants.Count);
+    }
+
+    /// <summary>
+    /// Garante que todas as bebidas cadastradas possuam insumo vinculado para controle e baixa de estoque.
+    /// </summary>
+    private static async Task EnsureBeverageStockIngredientsAsync(AppDbContext db, ILogger logger)
+    {
+        var beveragesWithoutIngredient = await db.Products
+            .Where(p => p.Category == PizzariaLucrativa.Domain.Enums.ProductCategory.Beverage && p.IngredientId == null)
+            .ToListAsync();
+
+        if (beveragesWithoutIngredient.Count == 0)
+            return;
+
+        foreach (var bev in beveragesWithoutIngredient)
+        {
+            var ingredient = new PizzariaLucrativa.Domain.Entities.Ingredient
+            {
+                TenantId = bev.TenantId,
+                Name = bev.Name,
+                PurchaseUnit = PizzariaLucrativa.Domain.Enums.MeasureUnit.un,
+                PurchaseQuantity = 1,
+                PurchasePrice = bev.PurchasePrice ?? 0m,
+                UnitCost = bev.PurchasePrice ?? 0m,
+                LossPercentage = 0,
+                CurrentStock = 12m,
+                MinimumStock = 5m,
+                MarkupMultiplier = bev.MarkupMultiplier ?? 2.0m
+            };
+            db.Ingredients.Add(ingredient);
+            await db.SaveChangesAsync();
+            bev.IngredientId = ingredient.Id;
+        }
+
+        await db.SaveChangesAsync();
+        logger.LogInformation("Vinculados {Count} insumos de estoque a bebidas existentes.", beveragesWithoutIngredient.Count);
     }
 }

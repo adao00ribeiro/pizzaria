@@ -315,4 +315,101 @@ public sealed class OrderFlowTests
         Assert.Single(kItems);
         Assert.Equal(comboName, kItems[0].GetProperty("comboName").GetString());
     }
+
+    [Fact]
+    public async Task Beverage_OrderCompleted_DeductsStock_AndTriggersAlertWhenBelowMinimum()
+    {
+        using var factory = new ApiFactory();
+        using var client = factory.CreateClient();
+
+        var session = await TestClient.RegisterAsync(client, "Pizzaria Bebidas");
+        var token = session.AccessToken;
+
+        // 1. Cadastra bebida com estoque inicial = 2 e estoque mínimo = 2
+        var createBevRes = await client.WithToken(token).PostAsJsonAsync("/api/v1/products", new
+        {
+            name = "Refrigerante Cola 2L",
+            category = "Beverage",
+            isActive = true,
+            purchasePrice = 6.00m,
+            markupMultiplier = 2.0m,
+            currentStock = 2m,
+            minimumStock = 2m
+        });
+        createBevRes.EnsureSuccessStatusCode();
+        using var createBevJson = await TestClient.ReadJsonAsync(createBevRes);
+        var beverageId = createBevJson.RootElement.GetProperty("id").GetGuid();
+
+        // 2. Confere listagem em /beverages
+        var bevListRes = await client.WithToken(token).GetAsync("/api/v1/beverages");
+        bevListRes.EnsureSuccessStatusCode();
+        using var bevListJson = await TestClient.ReadJsonAsync(bevListRes);
+        var bevItem = bevListJson.RootElement.EnumerateArray().First(b => b.GetProperty("id").GetGuid() == beverageId);
+        Assert.Equal(2m, bevItem.GetProperty("currentStock").GetDecimal());
+        Assert.Equal(2m, bevItem.GetProperty("minimumStock").GetDecimal());
+
+        // 3. Cria pedido com 1 unidade da bebida
+        var orderRes = await client.WithToken(token).PostAsJsonAsync("/api/v1/orders", new
+        {
+            type = "Counter",
+            customerName = "Cliente Balcão",
+            paymentMethod = "Cash",
+            discount = 0m,
+            items = new[]
+            {
+                new
+                {
+                    sizeId = (Guid?)null,
+                    comboId = (Guid?)null,
+                    quantity = 1,
+                    flavors = new[]
+                    {
+                        new { productId = beverageId, sharePercentage = 100m }
+                    }
+                }
+            }
+        });
+        orderRes.EnsureSuccessStatusCode();
+        using var orderJson = await TestClient.ReadJsonAsync(orderRes);
+        var orderId = orderJson.RootElement.GetProperty("id").GetGuid();
+
+        // 4. Inicia e finaliza o pedido (vai para InPreparation -> Ready -> Completed)
+        await client.WithToken(token).PostAsync($"/api/v1/kitchen/queue/{orderId}/start", null);
+        await client.WithToken(token).PostAsync($"/api/v1/kitchen/queue/{orderId}/ready", null);
+        var statusRes = await client.WithToken(token).PostAsJsonAsync($"/api/v1/orders/{orderId}/status", new
+        {
+            status = "Completed"
+        });
+        statusRes.EnsureSuccessStatusCode();
+
+        // 5. Verifica que o estoque da bebida foi descontado de 2 para 1
+        var bevAfterRes = await client.WithToken(token).GetAsync("/api/v1/beverages");
+        bevAfterRes.EnsureSuccessStatusCode();
+        using var bevAfterJson = await TestClient.ReadJsonAsync(bevAfterRes);
+        var bevAfter = bevAfterJson.RootElement.EnumerateArray().First(b => b.GetProperty("id").GetGuid() == beverageId);
+        Assert.Equal(1m, bevAfter.GetProperty("currentStock").GetDecimal());
+        Assert.True(bevAfter.GetProperty("belowMinimumStock").GetBoolean());
+
+        // 6. Verifica que o alerta de reposição de estoque foi gerado
+        var alertsRes = await client.WithToken(token).GetAsync("/api/v1/alerts");
+        alertsRes.EnsureSuccessStatusCode();
+        using var alertsJson = await TestClient.ReadJsonAsync(alertsRes);
+        var alerts = alertsJson.RootElement.GetProperty("items").EnumerateArray().ToList();
+        var stockAlert = alerts.FirstOrDefault(a => a.GetProperty("type").GetString() == "LowStock");
+        Assert.NotNull(stockAlert.ValueKind != System.Text.Json.JsonValueKind.Undefined ? (object)stockAlert : null);
+        Assert.Contains("Refrigerante Cola 2L", stockAlert.GetProperty("message").GetString());
+
+        // 7. Atualiza o estoque via PUT /beverages/{id}/markup (reposição de estoque para 10)
+        var updateRes = await client.WithToken(token).PutAsJsonAsync($"/api/v1/beverages/{beverageId}/markup", new
+        {
+            markupMultiplier = 2.0m,
+            purchasePrice = 6.00m,
+            currentStock = 10m,
+            minimumStock = 2m
+        });
+        updateRes.EnsureSuccessStatusCode();
+        using var updateJson = await TestClient.ReadJsonAsync(updateRes);
+        Assert.Equal(10m, updateJson.RootElement.GetProperty("currentStock").GetDecimal());
+        Assert.False(updateJson.RootElement.GetProperty("belowMinimumStock").GetBoolean());
+    }
 }

@@ -19,8 +19,14 @@ export class BeveragesService {
       .pipe(map(normalizeItems));
   }
 
-  updateMarkup(id: string, markupMultiplier: number, purchasePrice?: number): Observable<unknown> {
-    const body: MarkupRequest = { markupMultiplier, purchasePrice };
-    return this.http.put(`${this.base}/${id}/markup`, body);
+  updateMarkup(
+    id: string,
+    markupMultiplier: number,
+    purchasePrice?: number,
+    currentStock?: number,
+    minimumStock?: number,
+  ): Observable<Beverage> {
+    const body: MarkupRequest = { markupMultiplier, purchasePrice, currentStock, minimumStock };
+    return this.http.put<Beverage>(`${this.base}/${id}/markup`, body);
   }
 }

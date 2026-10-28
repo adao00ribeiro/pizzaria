@@ -24,12 +24,32 @@ public sealed class ProductService : IProductService
         if (category.HasValue)
             query = query.Where(p => p.Category == category.Value);
 
-        var products = await _db.ToListAsync(query.OrderBy(p => p.Name), ct);
+        var products = await _db.ToListAsync(query.Include(p => p.Ingredient).OrderBy(p => p.Name), ct);
         if (products.Count == 0)
             return Array.Empty<ProductDto>();
 
-        // Bebidas exibem markup e preço calculado (§10).
-        var beverageIds = products.Where(p => p.Category == ProductCategory.Beverage).Select(p => p.Id).ToList();
+        // Contingência TPT / Include: para produtos com IngredientId mas cuja navegação veio nula, carrega em lote
+        var missingNavIds = products
+            .Where(p => p.Ingredient == null && p.IngredientId.HasValue)
+            .Select(p => p.IngredientId!.Value)
+            .Distinct()
+            .ToList();
+
+        if (missingNavIds.Count > 0)
+        {
+            var loadedIngredients = await _db.ToListAsync(
+                _db.Set<Ingredient>().Where(i => missingNavIds.Contains(i.Id)), ct);
+            var map = loadedIngredients.ToDictionary(i => i.Id);
+
+            foreach (var p in products.Where(p => p.Ingredient == null && p.IngredientId.HasValue))
+            {
+                if (map.TryGetValue(p.IngredientId!.Value, out var ing))
+                {
+                    p.Ingredient = ing;
+                }
+            }
+        }
+
         return products.Select(p => Map(p)).ToList();
     }
 
@@ -82,25 +102,67 @@ public sealed class ProductService : IProductService
             product.MarkupMultiplier = 2.0m;
     }
 
-    /// <summary>Vincula a bebida a um insumo para dar baixa de estoque (docs/10, Sprint 2).</summary>
+    /// <summary>Vincula ou cria automaticamente um insumo de estoque para a bebida (docs/10, Sprint 2).</summary>
     private async Task ApplyIngredientLinkAsync(Product product, ProductInput input, CancellationToken ct)
     {
-        if (input.IngredientId is not Guid ingredientId)
+        if (input.Category != ProductCategory.Beverage)
         {
             product.IngredientId = null;
             return;
         }
 
-        if (input.Category != ProductCategory.Beverage)
-            throw new ValidationException("ingredientId",
-                "Só bebidas podem ser vinculadas a um insumo de estoque.");
+        Ingredient? ingredient = null;
+        if (input.IngredientId is Guid ingredientId)
+        {
+            ingredient = await _db.FirstOrDefaultAsync(
+                _db.Set<Ingredient>().Where(i => i.Id == ingredientId), ct)
+                ?? throw new ValidationException("ingredientId", "Ingrediente não encontrado.");
+        }
+        else if (product.IngredientId is Guid existingIngredientId)
+        {
+            ingredient = await _db.FirstOrDefaultAsync(
+                _db.Set<Ingredient>().Where(i => i.Id == existingIngredientId), ct);
+        }
 
-        var ingredient = await _db.FirstOrDefaultAsync(
-            _db.Set<Ingredient>().Where(i => i.Id == ingredientId), ct);
         if (ingredient is null)
-            throw new ValidationException("ingredientId", "Ingrediente não encontrado.");
+        {
+            var currentTenantId = _tenant.GetTenantId();
+            var tenantId = product.TenantId != Guid.Empty ? product.TenantId : currentTenantId;
+            ingredient = new Ingredient
+            {
+                TenantId = tenantId,
+                Name = product.Name,
+                PurchaseUnit = MeasureUnit.un,
+                PurchaseQuantity = 1,
+                PurchasePrice = product.PurchasePrice ?? 0m,
+                UnitCost = product.PurchasePrice ?? 0m,
+                LossPercentage = 0,
+                CurrentStock = input.CurrentStock ?? 0m,
+                MinimumStock = input.MinimumStock ?? 0m,
+                MarkupMultiplier = product.MarkupMultiplier ?? 2.0m
+            };
+            _db.Add(ingredient);
+            await _db.SaveChangesAsync(ct);
+        }
+        else
+        {
+            ingredient.Name = product.Name;
+            if (product.PurchasePrice.HasValue)
+            {
+                ingredient.PurchasePrice = product.PurchasePrice.Value;
+                ingredient.UnitCost = product.PurchasePrice.Value;
+            }
+            if (product.MarkupMultiplier.HasValue)
+                ingredient.MarkupMultiplier = product.MarkupMultiplier.Value;
+            if (input.CurrentStock.HasValue)
+                ingredient.CurrentStock = input.CurrentStock.Value;
+            if (input.MinimumStock.HasValue)
+                ingredient.MinimumStock = input.MinimumStock.Value;
+            ingredient.UpdatedAt = DateTime.UtcNow;
+        }
 
         product.IngredientId = ingredient.Id;
+        product.Ingredient = ingredient;
         if (product.PurchasePrice is null or <= 0)
             product.PurchasePrice = ingredient.UnitCost;
     }
@@ -122,22 +184,36 @@ public sealed class ProductService : IProductService
 
     private async Task<Product> FindAsync(Guid id, CancellationToken ct)
     {
-        var product = await _db.FirstOrDefaultAsync(_db.Set<Product>().Where(p => p.Id == id), ct);
-        return product ?? throw new NotFoundException("Produto não encontrado.");
+        var product = await _db.FirstOrDefaultAsync(
+            _db.Set<Product>().Include(p => p.Ingredient).Where(p => p.Id == id), ct);
+        if (product is null)
+            throw new NotFoundException("Produto não encontrado.");
+
+        if (product.Ingredient is null && product.IngredientId.HasValue)
+        {
+            product.Ingredient = await _db.FirstOrDefaultAsync(
+                _db.Set<Ingredient>().Where(i => i.Id == product.IngredientId.Value), ct);
+        }
+
+        return product;
     }
 
     private static ProductDto Map(Product p)
     {
         if (p.Category == ProductCategory.Beverage)
         {
-            var purchase = p.PurchasePrice ?? 0m;
-            var markup = p.MarkupMultiplier ?? 2.0m;
+            var purchase = p.PurchasePrice ?? p.Ingredient?.PurchasePrice ?? p.Ingredient?.UnitCost ?? 0m;
+            var markup = p.MarkupMultiplier ?? p.Ingredient?.MarkupMultiplier ?? 2.0m;
             var suggested = decimal.Round(purchase * markup, 2, MidpointRounding.AwayFromZero);
+            var currentStock = p.Ingredient?.CurrentStock;
+            var minimumStock = p.Ingredient?.MinimumStock;
             return new ProductDto(
-                p.Id, p.Name, p.Category, p.IsActive, markup, suggested, p.IngredientId, p.PurchasePrice, p.ImageUrl);
+                p.Id, p.Name, p.Category, p.IsActive, markup, suggested, p.IngredientId,
+                purchase, p.ImageUrl, currentStock, minimumStock);
         }
 
         return new ProductDto(
-            p.Id, p.Name, p.Category, p.IsActive, null, null, p.IngredientId, null, p.ImageUrl);
+            p.Id, p.Name, p.Category, p.IsActive, null, null, p.IngredientId,
+            null, p.ImageUrl, null, null);
     }
 }

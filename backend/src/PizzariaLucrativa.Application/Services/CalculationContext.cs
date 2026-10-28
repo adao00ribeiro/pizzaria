@@ -72,6 +72,12 @@ public sealed class CalculationContext : ICalculationSource
         return _ingredients!.GetValueOrDefault(id);
     }
 
+    public void AddIngredient(IngredientData data)
+    {
+        EnsureLoaded();
+        _ingredients![data.Id] = data;
+    }
+
     public PreparationData? GetPreparation(Guid id)
     {
         EnsureLoaded();

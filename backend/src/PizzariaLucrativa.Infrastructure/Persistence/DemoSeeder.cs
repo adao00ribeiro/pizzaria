@@ -225,19 +225,18 @@ public sealed class DemoSeeder
     {
         var coca = await _products.CreateAsync(new ProductInput(
             "Coca-Cola 2L", ProductCategory.Beverage, true,
-            ImageUrl: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=800&auto=format&fit=crop&q=80"), ct);
+            ImageUrl: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=800&auto=format&fit=crop&q=80",
+            PurchasePrice: 6.50m,
+            MarkupMultiplier: 2.0m,
+            CurrentStock: 24m,
+            MinimumStock: 5m), ct);
         var guarana = await _products.CreateAsync(new ProductInput(
             "Guaraná Antarctica 2L", ProductCategory.Beverage, true,
-            ImageUrl: "https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=800&auto=format&fit=crop&q=80"), ct);
-
-        var cocaEntity = await _db.Set<Product>().FirstAsync(p => p.Id == coca.Id, ct);
-        cocaEntity.PurchasePrice = 6.50m;
-        cocaEntity.MarkupMultiplier = 2.0m;
-
-        var guaranaEntity = await _db.Set<Product>().FirstAsync(p => p.Id == guarana.Id, ct);
-        guaranaEntity.PurchasePrice = 5.50m;
-        guaranaEntity.MarkupMultiplier = 2.0m;
-        await _db.SaveChangesAsync(ct);
+            ImageUrl: "https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=800&auto=format&fit=crop&q=80",
+            PurchasePrice: 5.50m,
+            MarkupMultiplier: 2.0m,
+            CurrentStock: 18m,
+            MinimumStock: 5m), ct);
 
         var grande = sizes.FirstOrDefault(s => s.Name == "Grande") ?? sizes[0];
         var calabresa = pizzas.FirstOrDefault(p => p.Name == "Calabresa") ?? pizzas[0];

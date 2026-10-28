@@ -67,6 +67,29 @@ public sealed class StockConsumptionService : IStockConsumptionService
             // Saldo derivado dos movimentos (docs/05 §7).
             ingredient.CurrentStock -= rounded;
             ingredient.UpdatedAt = now;
+
+            // Se o estoque atingir ou ficar abaixo do mínimo, acende alerta de reposição imediatamente (docs/06 §11).
+            if (ingredient.MinimumStock > 0 && ingredient.CurrentStock <= ingredient.MinimumStock)
+            {
+                var hasOpenAlert = await _db.Set<Alert>()
+                    .AnyAsync(a => a.TenantId == order.TenantId &&
+                                   a.IngredientId == ingredient.Id &&
+                                   a.Type == AlertType.LowStock &&
+                                   a.Status == AlertStatus.Open, ct);
+
+                if (!hasOpenAlert)
+                {
+                    _db.Add(new Alert
+                    {
+                        TenantId = order.TenantId,
+                        Type = AlertType.LowStock,
+                        IngredientId = ingredient.Id,
+                        Message = $"Estoque de '{ingredient.Name}' abaixo do mínimo " +
+                                  $"({ingredient.CurrentStock} {ingredient.PurchaseUnit} <= {ingredient.MinimumStock} {ingredient.PurchaseUnit}).",
+                        Status = AlertStatus.Open
+                    });
+                }
+            }
         }
 
         await _db.SaveChangesAsync(ct);
@@ -232,9 +255,34 @@ public sealed class StockConsumptionService : IStockConsumptionService
                 _db.Set<Product>().Where(p => p.Id == productId), ct)
             ?? throw new ValidationException("items", "Produto não encontrado.");
 
-        // Bebida sem insumo vinculado não movimenta estoque (docs/10, Sprint 2).
-        if (product.IngredientId is not Guid ingredientId || quantity == 0)
+        if (quantity == 0)
             return;
+
+        // Se a bebida não tiver insumo vinculado ainda, garante a criação e vinculação
+        if (product.IngredientId is not Guid ingredientId)
+        {
+            var ingredient = new Ingredient
+            {
+                TenantId = product.TenantId,
+                Name = product.Name,
+                PurchaseUnit = MeasureUnit.un,
+                PurchaseQuantity = 1,
+                PurchasePrice = product.PurchasePrice ?? 0m,
+                UnitCost = product.PurchasePrice ?? 0m,
+                LossPercentage = 0,
+                CurrentStock = 0m,
+                MinimumStock = 0m,
+                MarkupMultiplier = product.MarkupMultiplier ?? 2.0m
+            };
+            _db.Add(ingredient);
+            await _db.SaveChangesAsync(ct);
+            product.IngredientId = ingredient.Id;
+            ingredientId = ingredient.Id;
+
+            ctx.AddIngredient(new IngredientData(
+                ingredient.Id, ingredient.Name, ingredient.PurchaseUnit,
+                ingredient.PurchaseQuantity, ingredient.PurchasePrice, ingredient.LossPercentage));
+        }
 
         Consume(ingredientId, quantity, MeasureUnit.un, ctx, totals, allowDimensionless: true);
     }

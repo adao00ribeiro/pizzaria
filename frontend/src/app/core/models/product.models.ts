@@ -12,6 +12,8 @@ export interface Product {
   markupMultiplier?: number | null;
   suggestedPrice?: number | null;
   ingredientId?: string | null;
+  currentStock?: number | null;
+  minimumStock?: number | null;
 }
 
 /** Body POST/PUT /products */
@@ -22,6 +24,8 @@ export interface ProductRequest {
   imageUrl?: string | null;
   purchasePrice?: number | null;
   markupMultiplier?: number | null;
+  currentStock?: number | null;
+  minimumStock?: number | null;
 }
 
 export type ProductDto = Product;
@@ -48,10 +52,16 @@ export interface Beverage {
   markupMultiplier: number;
   suggestedPrice: number;
   marginPercentage: number;
+  imageUrl?: string | null;
+  currentStock: number;
+  minimumStock: number;
+  belowMinimumStock: boolean;
 }
 
 /** PUT /beverages/{id}/markup */
 export interface MarkupRequest {
   markupMultiplier: number;
   purchasePrice?: number;
+  currentStock?: number;
+  minimumStock?: number;
 }

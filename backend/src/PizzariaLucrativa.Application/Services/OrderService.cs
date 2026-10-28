@@ -631,6 +631,9 @@ public sealed partial class OrderService : IOrderService
 
                     case OrderStatus.Completed:
                         order.DeliveredAt = now;
+                        // Garante a baixa de estoque na finalização do pedido (idempotente caso já tenha baixado no Ready).
+                        var consumedOnCompleted = await _stock.ConsumeForOrderAsync(order, innerCt);
+                        affectsStock = affectsStock || consumedOnCompleted;
                         break;
 
                     case OrderStatus.Cancelled:

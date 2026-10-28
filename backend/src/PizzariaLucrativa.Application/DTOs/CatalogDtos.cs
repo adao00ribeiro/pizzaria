@@ -117,7 +117,9 @@ public sealed record ProductDto(
     decimal? SuggestedPrice,
     Guid? IngredientId,
     decimal? PurchasePrice = null,
-    string? ImageUrl = null);
+    string? ImageUrl = null,
+    decimal? CurrentStock = null,
+    decimal? MinimumStock = null);
 
 public sealed record ProductInput(
     string Name,
@@ -126,7 +128,9 @@ public sealed record ProductInput(
     Guid? IngredientId = null,
     decimal? PurchasePrice = null,
     decimal? MarkupMultiplier = null,
-    string? ImageUrl = null);
+    string? ImageUrl = null,
+    decimal? CurrentStock = null,
+    decimal? MinimumStock = null);
 
 public sealed record SizeDto(Guid Id, string Name, int? DiameterCm);
 
@@ -142,4 +146,7 @@ public sealed record BeverageDto(
     decimal SuggestedPrice,
     decimal MarginPercentage,
     MarginStatus MarginStatus,
-    string? ImageUrl = null);
+    string? ImageUrl = null,
+    decimal CurrentStock = 0,
+    decimal MinimumStock = 0,
+    bool BelowMinimumStock = false);

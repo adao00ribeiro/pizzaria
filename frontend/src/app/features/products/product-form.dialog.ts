@@ -223,6 +223,20 @@ export interface ProductFormDialogData {
             <mat-icon matSuffix>trending_up</mat-icon>
           </mat-form-field>
 
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <mat-form-field appearance="outline">
+              <mat-label>Quantidade em estoque</mat-label>
+              <input matInput type="number" min="0" step="1" formControlName="currentStock" placeholder="Ex.: 24" />
+              <mat-icon matSuffix>inventory_2</mat-icon>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Estoque mínimo para alerta</mat-label>
+              <input matInput type="number" min="0" step="1" formControlName="minimumStock" placeholder="Ex.: 5" />
+              <mat-icon matSuffix>notifications_active</mat-icon>
+            </mat-form-field>
+          </div>
+
           <p class="hint-text" style="margin: -4px 0 8px;">
             Preço de venda sugerido: <strong>{{ previewBeveragePrice() | brl }}</strong>
           </p>
@@ -253,6 +267,8 @@ export class ProductFormDialog {
     imageUrl: [this.data.product?.imageUrl ?? ''],
     purchasePrice: [this.data.product?.purchasePrice ?? 6.5, [Validators.min(0)]],
     markupMultiplier: [this.data.product?.markupMultiplier ?? 2.0, [Validators.min(0.01)]],
+    currentStock: [this.data.product?.currentStock ?? 10, [Validators.min(0)]],
+    minimumStock: [this.data.product?.minimumStock ?? 5, [Validators.min(0)]],
     isActive: [this.data.product?.isActive ?? true],
   });
 
@@ -294,6 +310,8 @@ export class ProductFormDialog {
       isActive: raw.isActive,
       purchasePrice: isBev ? Number(raw.purchasePrice ?? 0) : null,
       markupMultiplier: isBev ? Number(raw.markupMultiplier ?? 2) : null,
+      currentStock: isBev ? Number(raw.currentStock ?? 0) : null,
+      minimumStock: isBev ? Number(raw.minimumStock ?? 0) : null,
     });
   }
 }

@@ -30,13 +30,13 @@ public sealed class StockService : IStockService
     {
         var query = _db.Set<Ingredient>().AsQueryable();
         if (belowMinimum == true)
-            query = query.Where(i => i.CurrentStock < i.MinimumStock);
+            query = query.Where(i => i.MinimumStock > 0 && i.CurrentStock <= i.MinimumStock);
         else if (belowMinimum == false)
-            query = query.Where(i => i.CurrentStock >= i.MinimumStock);
+            query = query.Where(i => i.MinimumStock == 0 || i.CurrentStock > i.MinimumStock);
 
         var total = await _db.CountAsync(query, ct);
         var ingredients = await _db.ToListAsync(
-            query.OrderBy(i => i.CurrentStock < i.MinimumStock ? 0 : 1) // abaixo do mínimo primeiro
+            query.OrderBy(i => i.MinimumStock > 0 && i.CurrentStock <= i.MinimumStock ? 0 : 1) // abaixo do mínimo primeiro
                 .ThenBy(i => i.Name)
                 .Skip(page.Skip)
                 .Take(page.PageSize), ct);
@@ -44,7 +44,7 @@ public sealed class StockService : IStockService
         return new PagedResult<StockBalanceDto>(
             ingredients.Select(i => new StockBalanceDto(
                 i.Id, i.Name, i.CurrentStock, i.MinimumStock,
-                i.CurrentStock < i.MinimumStock, i.PurchaseUnit)).ToList(),
+                i.MinimumStock > 0 && i.CurrentStock <= i.MinimumStock, i.PurchaseUnit)).ToList(),
             total);
     }
 

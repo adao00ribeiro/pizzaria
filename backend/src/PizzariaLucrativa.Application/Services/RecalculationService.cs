@@ -241,7 +241,7 @@ public sealed class RecalculationService : IRecalculationService
         var openAlerts = await _db.ToListAsync(
             _db.Set<Alert>().Where(a => a.Status == AlertStatus.Open && a.Type == AlertType.LowStock), ct);
 
-        foreach (var ingredient in ingredients.Where(i => i.MinimumStock > 0 && i.CurrentStock < i.MinimumStock))
+        foreach (var ingredient in ingredients.Where(i => i.MinimumStock > 0 && i.CurrentStock <= i.MinimumStock))
         {
             if (openAlerts.Any(a => a.IngredientId == ingredient.Id))
                 continue;
@@ -252,7 +252,7 @@ public sealed class RecalculationService : IRecalculationService
                 Type = AlertType.LowStock,
                 IngredientId = ingredient.Id,
                 Message = $"Estoque de '{ingredient.Name}' abaixo do mínimo " +
-                          $"({ingredient.CurrentStock} {ingredient.PurchaseUnit} < {ingredient.MinimumStock} {ingredient.PurchaseUnit})."
+                          $"({ingredient.CurrentStock} {ingredient.PurchaseUnit} <= {ingredient.MinimumStock} {ingredient.PurchaseUnit})."
             });
         }
 
@@ -261,7 +261,7 @@ public sealed class RecalculationService : IRecalculationService
             if (alert.IngredientId is Guid ingredientId)
             {
                 var ingredient = ingredients.FirstOrDefault(i => i.Id == ingredientId);
-                if (ingredient is null || ingredient.CurrentStock >= ingredient.MinimumStock)
+                if (ingredient is null || ingredient.CurrentStock > ingredient.MinimumStock)
                 {
                     alert.Status = AlertStatus.Resolved;
                     alert.ResolvedAt = DateTime.UtcNow;
