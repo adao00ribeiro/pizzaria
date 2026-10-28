@@ -499,8 +499,14 @@ body.dark-theme,
       color: #f3f4f6 !important;
     }
 
-    &.is-highlight .result-value {
-      color: #f87171 !important;
+    &.is-highlight {
+      border-color: rgba(56, 189, 248, 0.4) !important;
+      background: rgba(14, 165, 233, 0.08) !important;
+
+      .result-value {
+        color: #38bdf8 !important;
+        font-weight: 700 !important;
+      }
     }
   }
 
@@ -1549,8 +1555,14 @@ body.dark-theme,
   font-weight: 500;
 }
 
-.result-cell.is-highlight .result-value {
-  color: #C62828;
+.result-cell.is-highlight {
+  border-color: rgba(2, 132, 199, 0.4);
+  background: rgba(240, 249, 255, 0.7);
+
+  .result-value {
+    color: #0284c7;
+    font-weight: 700;
+  }
 }
 
 .detail-list {

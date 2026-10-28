@@ -145,8 +145,7 @@
 // ---------------------------------------------------------------------------
 // Barra de Atalhos Rápidos (Acesso Rápido)
 // ---------------------------------------------------------------------------
-.quick-nav-bar,
-.pz-quick-links {
+.quick-nav-bar {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -232,6 +231,42 @@
   padding: 1px 6px;
   border-radius: 999px;
   margin-left: 6px;
+}
+
+// ---------------------------------------------------------------------------
+// Controles Segmentados Executivos (.pill-segmented)
+// ---------------------------------------------------------------------------
+.pill-segmented {
+  display: inline-flex;
+  align-items: center;
+  background: var(--pz-bg-subtle);
+  border: 1px solid var(--pz-border);
+  border-radius: 999px;
+  padding: 3px;
+  gap: 2px;
+}
+
+.pill-seg-btn {
+  border: none;
+  background: transparent;
+  color: var(--pz-text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+
+  &:hover {
+    color: var(--pz-text-main);
+  }
+
+  &.is-active {
+    background: var(--pz-bg-card);
+    color: var(--pz-primary);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -464,7 +499,7 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 12px;
-  padding: 18px 20px 14px;
+  padding: 16px 20px 14px;
   border-bottom: 1px solid var(--pz-border);
 }
 
@@ -508,6 +543,11 @@
     background: var(--pz-warning-light);
     color: var(--pz-warning);
   }
+
+  &.icon-flame-box {
+    background: rgba(249, 115, 22, 0.15);
+    color: #ea580c;
+  }
 }
 
 .card-main-title {
@@ -525,8 +565,152 @@
 }
 
 // ---------------------------------------------------------------------------
-// Rankings Lado a Lado
+// Rankings Lado a Lado & Pódio Executivo (Vendas Reais vs Ficha Técnica)
 // ---------------------------------------------------------------------------
+.rankings-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-bottom: 14px;
+  background: var(--pz-bg-card);
+  border: 1px solid var(--pz-border);
+  border-radius: 14px;
+  padding: 12px 18px;
+  box-shadow: var(--pz-shadow-card);
+}
+
+.rankings-header-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.rankings-header-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.rankings-title-badge-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.rankings-section-title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--pz-text-main);
+  letter-spacing: -0.01em;
+}
+
+.rankings-section-subtitle {
+  margin: 2px 0 0;
+  font-size: 0.8rem;
+  color: var(--pz-text-muted);
+}
+
+.source-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 999px;
+
+  .mat-icon {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+  }
+
+  &.badge-sales {
+    background: var(--pz-success-light);
+    color: var(--pz-success);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+  }
+
+  &.badge-sheet {
+    background: var(--pz-info-light);
+    color: var(--pz-info);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+  }
+}
+
+.source-selector-wrap {
+  display: flex;
+  align-items: center;
+}
+
+.source-segmented-control {
+  display: inline-flex;
+  align-items: center;
+  background: var(--pz-bg-subtle);
+  border: 1px solid var(--pz-border);
+  border-radius: 12px;
+  padding: 4px;
+  gap: 4px;
+}
+
+.source-segmented-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: none;
+  background: transparent;
+  color: var(--pz-text-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+  .mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    color: var(--pz-text-muted);
+    transition: color 0.15s ease;
+  }
+
+  &:hover:not(.is-active) {
+    background: var(--pz-bg-card-hover);
+    color: var(--pz-text-main);
+
+    .mat-icon {
+      color: var(--pz-text-main);
+    }
+  }
+
+  &.is-active {
+    background: var(--pz-bg-card);
+    color: var(--pz-primary);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+    border: 1px solid var(--pz-border);
+
+    .mat-icon {
+      color: var(--pz-primary);
+    }
+  }
+}
+
+.source-chip-star {
+  background: #ea580c;
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
 .rankings-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -540,20 +724,20 @@
 }
 
 .ranking-content {
-  padding: 8px 12px 14px !important;
+  padding: 10px 14px 14px !important;
 }
 
 .ranking-list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .ranking-row {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 12px;
+  padding: 9px 12px;
   border-radius: 10px;
   background: var(--pz-bg-subtle);
   border: 1px solid var(--pz-border);
@@ -562,6 +746,18 @@
   &:hover {
     background: var(--pz-bg-card-hover);
     border-color: var(--pz-border);
+    transform: translateY(-1px);
+  }
+
+  // Destaque do 1º Lugar (Campeão / Ouro)
+  &.is-podium-first {
+    border-color: rgba(234, 179, 8, 0.4);
+    background: linear-gradient(90deg, rgba(254, 240, 138, 0.15) 0%, var(--pz-bg-subtle) 100%);
+  }
+
+  &.cost-row.is-podium-first {
+    border-color: rgba(239, 68, 68, 0.35);
+    background: linear-gradient(90deg, rgba(254, 226, 226, 0.25) 0%, var(--pz-bg-subtle) 100%);
   }
 }
 
@@ -581,28 +777,45 @@
   border-radius: 50%;
   font-size: 0.75rem;
   font-weight: 700;
+  position: relative;
+
+  .badge-icon {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    margin-right: -2px;
+  }
+
+  .badge-num {
+    font-size: 0.75rem;
+    line-height: 1;
+  }
 
   &.rank-gold {
     background: linear-gradient(135deg, #fef08a 0%, #eab308 100%);
     color: #713f12;
-    box-shadow: 0 2px 6px rgba(234, 179, 8, 0.35);
+    box-shadow: 0 2px 7px rgba(234, 179, 8, 0.4);
+    border: 1px solid #facc15;
   }
 
   &.rank-silver {
-    background: linear-gradient(135deg, #f1f5f9 0%, #cbd5e1 100%);
+    background: linear-gradient(135deg, #f8fafc 0%, #cbd5e1 100%);
     color: #334155;
     box-shadow: 0 2px 5px rgba(148, 163, 184, 0.3);
+    border: 1px solid #94a3b8;
   }
 
   &.rank-bronze {
     background: linear-gradient(135deg, #fed7aa 0%, #f97316 100%);
     color: #7c2d12;
     box-shadow: 0 2px 5px rgba(249, 115, 22, 0.3);
+    border: 1px solid #fb923c;
   }
 
   &.rank-neutral {
     background: var(--pz-bg-muted);
     color: var(--pz-text-muted);
+    border: 1px solid var(--pz-border);
   }
 
   &.rank-cost-high {
@@ -614,12 +827,13 @@
   &.rank-cost-mid {
     background: var(--pz-danger-light);
     color: var(--pz-danger);
+    border: 1px solid rgba(248, 113, 113, 0.3);
   }
 }
 
 .pizza-avatar-wrap {
-  width: 44px;
-  height: 44px;
+  width: 42px;
+  height: 42px;
   border-radius: 10px;
   overflow: hidden;
   background: var(--pz-bg-muted);
@@ -643,9 +857,9 @@
   justify-content: center;
 
   .mat-icon {
-    font-size: 24px;
-    width: 24px;
-    height: 24px;
+    font-size: 22px;
+    width: 22px;
+    height: 22px;
     opacity: 0.85;
   }
 }
@@ -705,6 +919,20 @@
   &.fill-cost {
     background: linear-gradient(90deg, #f87171 0%, #dc2626 100%);
   }
+
+  &.fill-qty {
+    background: linear-gradient(90deg, #f59e0b 0%, #ea580c 100%);
+  }
+}
+
+.qty-pill-bold {
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: rgba(234, 88, 12, 0.1);
+  color: #ea580c;
+  padding: 1px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(234, 88, 12, 0.25);
 }
 
 .rank-value-wrap {
@@ -727,6 +955,11 @@
   &.cost-value {
     color: var(--pz-danger);
   }
+
+  &.qty-highlight {
+    color: #ea580c;
+    font-weight: 800;
+  }
 }
 
 .rank-value-sub {
@@ -734,23 +967,321 @@
   color: var(--pz-text-muted);
 }
 
+.rank-sales-profit-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: var(--pz-success-light);
+  color: var(--pz-success);
+  padding: 3px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  white-space: nowrap;
+
+  .profit-badge-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: var(--pz-text-muted);
+    text-transform: uppercase;
+  }
+
+  .profit-badge-val {
+    color: var(--pz-success);
+  }
+}
+
 .rank-status-wrap {
   flex-shrink: 0;
 }
 
-// ---------------------------------------------------------------------------
-// 4. Gráfico de Margem por Sabor
-// ---------------------------------------------------------------------------
-.chart-card {
-  background: var(--pz-bg-card) !important;
-  border: 1px solid var(--pz-border) !important;
+.cost-alert-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 999px;
+
+  .mat-icon {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+  }
+
+  &.danger {
+    background: var(--pz-danger-light);
+    color: var(--pz-danger);
+    border: 1px solid rgba(248, 113, 113, 0.4);
+  }
+
+  &.warning {
+    background: var(--pz-warning-light);
+    color: var(--pz-warning);
+    border: 1px solid rgba(251, 191, 36, 0.4);
+  }
 }
 
-.chart-legend-pills {
+.cost-ratio-badge {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--pz-text-muted);
+  background: var(--pz-bg-muted);
+  border: 1px solid var(--pz-border);
+  padding: 2px 7px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.ranking-footer-info {
+  margin-top: 10px;
+  text-align: right;
+  font-size: 0.72rem;
+  color: var(--pz-text-muted);
+}
+
+// ---------------------------------------------------------------------------
+// 4. Gráfico Executivo de Margem por Sabor (%)
+// ---------------------------------------------------------------------------
+.chart-header-enhanced {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.chart-title-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chart-mode-pill {
+  font-size: 0.68rem;
+  font-weight: 600;
+  background: var(--pz-info-light);
+  color: var(--pz-info);
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+
+  &.is-real {
+    background: var(--pz-success-light);
+    color: var(--pz-success);
+    border-color: rgba(52, 211, 153, 0.35);
+  }
+}
+
+.chart-sub-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 10px 20px;
+  background: var(--pz-bg-card-hover);
+  border-top: 1px solid var(--pz-border-subtle);
+  border-bottom: 1px solid var(--pz-border-subtle);
+}
+
+.chart-items-count {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--pz-text-secondary);
+
+  .mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    color: var(--pz-text-muted);
+  }
+
+  strong {
+    color: var(--pz-text-main);
+  }
+}
+
+.chart-controls-wrap {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.chart-size-select-wrap {
+  .compact-select {
+    min-width: 150px;
+    height: 32px;
+    background: var(--pz-bg-subtle);
+    border: 1px solid var(--pz-border);
+    border-radius: 8px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--pz-text-main);
+    padding: 0 10px;
+    display: inline-flex;
+    align-items: center;
+  }
+}
+
+.chart-callout-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: rgba(14, 165, 233, 0.08);
+  border: 1px solid rgba(14, 165, 233, 0.25);
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 0.82rem;
+  color: var(--pz-text-main);
+  line-height: 1.45;
+
+  .callout-icon {
+    color: #0284c7;
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  strong {
+    color: #0369a1;
+  }
+}
+
+.insight-standardized-box {
+  background: rgba(16, 185, 129, 0.05);
+  border-color: rgba(16, 185, 129, 0.25);
+}
+
+.standardized-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--pz-success-light);
+  color: var(--pz-success);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 0.82rem;
+  font-weight: 700;
+
+  .mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    color: var(--pz-success);
+  }
+}
+
+.chart-body-content {
+  padding: 16px 20px 20px !important;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+// Resumo Executivo em Micro-cards
+.chart-insights-banner {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.insight-box {
+  background: var(--pz-bg-subtle);
+  border: 1px solid var(--pz-border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.insight-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--pz-text-muted);
+}
+
+.insight-val {
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.2;
+
+  &.is-emerald {
+    color: var(--pz-success);
+  }
+}
+
+.insight-item-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.insight-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--pz-text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.insight-val-badge {
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
+  white-space: nowrap;
+
+  &.badge-green {
+    background: var(--pz-success-light);
+    color: var(--pz-success);
+    border: 1px solid rgba(52, 211, 153, 0.3);
+  }
+
+  &.badge-amber {
+    background: var(--pz-warning-light);
+    color: var(--pz-warning);
+    border: 1px solid rgba(251, 191, 36, 0.3);
+  }
+
+  &.badge-red {
+    background: var(--pz-danger-light);
+    color: var(--pz-danger);
+    border: 1px solid rgba(248, 113, 113, 0.3);
+  }
+}
+
+.insight-health-line {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.insight-sub {
+  font-size: 0.72rem;
+  color: var(--pz-text-muted);
+}
+
+.chart-legend-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 4px 2px;
 }
 
 .legend-pill {
@@ -759,7 +1290,6 @@
   gap: 6px;
   font-size: 0.75rem;
   color: var(--pz-text-secondary);
-  font-weight: 500;
 }
 
 .legend-dot {
@@ -780,15 +1310,21 @@
   }
 }
 
+.chart-scroll-wrap {
+  max-height: 540px;
+  overflow-y: auto;
+  border: 1px solid var(--pz-border-subtle);
+  border-radius: 10px;
+  padding: 6px 4px;
+}
+
 .chart-container {
   position: relative;
-  height: 320px;
   width: 100%;
-  padding: 10px 4px 6px;
 }
 
 // ---------------------------------------------------------------------------
-// 5. Consulta Individual / Simulador de Ficha
+// 5. Simulador de Ficha Técnica Estruturado em Blocos Lógicos
 // ---------------------------------------------------------------------------
 .simulator-content {
   padding: 20px !important;
@@ -825,7 +1361,7 @@
   align-items: center;
   justify-content: center;
   gap: 12px;
-  padding: 32px 16px;
+  padding: 36px 16px;
   color: var(--pz-text-muted);
   font-size: 0.9rem;
 }
@@ -833,104 +1369,364 @@
 .simulator-results-wrap {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 20px;
 }
 
-.breakdown-box {
-  background: var(--pz-bg-subtle);
+// Blocos de Custos vs Comercial
+.sim-blocks-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+
+  @media (min-width: 1080px) {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.sim-group-card {
   border: 1px solid var(--pz-border);
   border-radius: 12px;
-  padding: 16px 20px;
+  background: var(--pz-bg-card);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: var(--pz-shadow-card);
+
+  &.costs-group {
+    border-top: 3px solid #64748b;
+  }
+
+  &.commercial-group {
+    border-top: 3px solid #0284c7;
+  }
 }
 
-.breakdown-header {
+.sim-group-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
-  color: var(--pz-text-main);
+  gap: 12px;
+}
+
+.group-icon-wrap {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 
   .mat-icon {
     font-size: 20px;
     width: 20px;
     height: 20px;
-    color: var(--pz-primary);
   }
 
-  h3 {
-    margin: 0;
-    font-size: 0.92rem;
-    font-weight: 600;
+  &.icon-costs {
+    background: var(--pz-bg-muted);
+    color: #475569;
+  }
+
+  &.icon-commercial {
+    background: rgba(2, 132, 199, 0.12);
+    color: #0284c7;
   }
 }
 
-.breakdown-list {
+.group-title {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--pz-text-main);
+}
+
+.group-subtitle {
+  margin: 1px 0 0;
+  font-size: 0.72rem;
+  color: var(--pz-text-muted);
+}
+
+.sim-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+}
+
+.result-cell {
+  background: var(--pz-bg-subtle);
+  border: 1px solid var(--pz-border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  .result-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--pz-text-muted);
+    margin-bottom: 4px;
+  }
+
+  .result-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--pz-text-main);
+  }
+
+  .metric-caption {
+    font-size: 0.68rem;
+    color: var(--pz-text-muted);
+    margin-top: 4px;
+  }
+
+  // Preço Sugerido com Azul Corporativo de Destaque
+  &.commercial-price-cell.is-highlight {
+    border-color: rgba(2, 132, 199, 0.4);
+    background: rgba(240, 249, 255, 0.85);
+
+    .result-value {
+      color: #0284c7;
+      font-size: 1.35rem;
+      font-weight: 800;
+    }
+  }
+
+  &.metric-total-cost {
+    background: var(--pz-bg-muted);
+    border-color: var(--pz-border);
+
+    .cost-sum-value {
+      color: #dc2626;
+    }
+  }
+
+  &.metric-profit .profit-num {
+    color: var(--pz-success);
+  }
+
+  &.metric-margin .margin-num {
+    color: var(--pz-success);
+  }
+
+  &.metric-status {
+    .status-wrap-padded {
+      margin: 4px 0;
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Detalhamento dos Insumos
+// ---------------------------------------------------------------------------
+.breakdown-box {
+  background: var(--pz-bg-card);
+  border: 1px solid var(--pz-border);
+  border-radius: 12px;
+  padding: 16px 20px;
+  box-shadow: var(--pz-shadow-card);
+}
+
+.breakdown-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--pz-border-subtle);
+}
+
+.breakdown-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  .mat-icon {
+    font-size: 22px;
+    width: 22px;
+    height: 22px;
+    color: var(--pz-primary);
+  }
+}
+
+.breakdown-main-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--pz-text-main);
+}
+
+.breakdown-sub {
+  margin: 2px 0 0;
+  font-size: 0.74rem;
+  color: var(--pz-text-muted);
+}
+
+.breakdown-count-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--pz-text-secondary);
+  background: var(--pz-bg-muted);
+  border: 1px solid var(--pz-border);
+  padding: 3px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.breakdown-items-list {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
 .breakdown-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 8px 12px;
-  background: var(--pz-bg-card);
-  border: 1px solid var(--pz-border);
+  gap: 14px;
+  padding: 9px 14px;
+  background: var(--pz-bg-subtle);
+  border: 1px solid var(--pz-border-subtle);
   border-radius: 8px;
-  font-size: 0.85rem;
+  transition: all 0.15s ease;
 
-  &.breakdown-addon {
-    background: #fefce8;
-    border-color: #fef08a;
+  &:hover {
+    background: var(--pz-bg-card-hover);
+    border-color: var(--pz-border);
+  }
 
-    .addon-icon {
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
-      color: #ca8a04;
+  &.addon-row.packaging-row {
+    background: rgba(2, 132, 199, 0.05);
+    border-color: rgba(2, 132, 199, 0.2);
+
+    .packaging-icon .mat-icon {
+      color: #0284c7;
+    }
+  }
+
+  &.addon-row.loss-row {
+    background: rgba(245, 158, 11, 0.06);
+    border-color: rgba(245, 158, 11, 0.25);
+
+    .loss-icon .mat-icon {
+      color: #d97706;
     }
   }
 }
 
-.breakdown-desc {
+.item-primary-info {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   min-width: 0;
 }
 
-.breakdown-dot {
-  width: 6px;
-  height: 6px;
+.item-dot {
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: var(--pz-text-muted);
   flex-shrink: 0;
 }
 
+.addon-icon-wrap {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  .mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.item-names-box {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
 .item-name {
+  font-size: 0.85rem;
+  font-weight: 600;
   color: var(--pz-text-main);
-  font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.item-qty-badge {
-  font-size: 0.72rem;
-  background: var(--pz-bg-muted);
-  color: var(--pz-text-secondary);
-  padding: 1px 6px;
-  border-radius: 6px;
-  font-weight: 500;
+.item-sub-tag {
+  font-size: 0.66rem;
+  color: var(--pz-text-muted);
+}
+
+.item-qty-box {
   flex-shrink: 0;
 }
 
-.breakdown-cost {
+.qty-pill {
+  font-size: 0.72rem;
   font-weight: 600;
-  color: var(--pz-text-main);
+  background: var(--pz-bg-muted);
+  color: var(--pz-text-secondary);
+  border: 1px solid var(--pz-border);
+  padding: 2px 8px;
+  border-radius: 6px;
   white-space: nowrap;
+}
+
+.item-share-box {
+  width: 110px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex-shrink: 0;
+
+  .share-label {
+    font-size: 0.66rem;
+    color: var(--pz-text-muted);
+    text-align: right;
+  }
+
+  .share-bar-track {
+    width: 100%;
+    height: 4px;
+    background: var(--pz-bg-muted);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+
+  .share-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #38bdf8 0%, #0284c7 100%);
+    border-radius: 999px;
+  }
+}
+
+.item-cost-box {
+  min-width: 80px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.item-cost-val {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--pz-text-main);
+
+  &.tag-loss {
+    color: var(--pz-warning);
+    font-size: 0.8rem;
+  }
 }
 
 .hint-empty {
@@ -938,6 +1734,7 @@
   font-size: 0.85rem;
   color: var(--pz-text-muted);
   font-style: italic;
+  padding: 12px 0;
 }
 
 .simulator-placeholder {
@@ -946,7 +1743,7 @@
   align-items: center;
   justify-content: center;
   gap: 10px;
-  padding: 40px 16px;
+  padding: 44px 16px;
   text-align: center;
   color: var(--pz-text-muted);
   background: var(--pz-bg-subtle);
@@ -954,9 +1751,9 @@
   border: 1px dashed var(--pz-border);
 
   .mat-icon {
-    font-size: 36px;
-    width: 36px;
-    height: 36px;
+    font-size: 38px;
+    width: 38px;
+    height: 38px;
     color: var(--pz-text-muted);
   }
 
@@ -969,24 +1766,23 @@
 
 // ---------------------------------------------------------------------------
 // Regras Específicas do Modo Escuro (:host-context(.dark-theme))
-// Garante contraste impecável nos números de KPI e detalhes visuais
 // ---------------------------------------------------------------------------
 :host-context(.dark-theme),
 :host-context([data-theme='dark']) {
   .card-kpi-blue .kpi-number {
-    color: #38bdf8 !important; // Azul celeste nítido
+    color: #38bdf8 !important;
   }
 
   .card-kpi-purple .kpi-number {
-    color: #c084fc !important; // Lilás suave e visível para Custo Fixo
+    color: #c084fc !important;
   }
 
   .card-kpi-amber .kpi-number {
-    color: #fbbf24 !important; // Dourado claro para Rateio / Pizza
+    color: #fbbf24 !important;
   }
 
   .card-kpi-emerald .kpi-number {
-    color: #34d399 !important; // Esmeralda vibrante para Margem Média
+    color: #34d399 !important;
   }
 
   .card-kpi-orange .kpi-number.is-orange {
@@ -997,26 +1793,79 @@
     color: #f87171 !important;
   }
 
-  .breakdown-row.breakdown-addon {
-    background: rgba(202, 138, 4, 0.15) !important;
-    border-color: rgba(202, 138, 4, 0.3) !important;
-
-    .addon-icon {
-      color: #fde047 !important;
-    }
+  .pill-seg-btn.is-active {
+    background: #1e293b !important;
+    color: #38bdf8 !important;
   }
 
   .rank-badge.rank-silver {
     background: linear-gradient(135deg, #334155 0%, #1e293b 100%) !important;
     color: #e2e8f0 !important;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4) !important;
+    border-color: #475569 !important;
+  }
+
+  .ranking-row.is-podium-first {
+    background: linear-gradient(90deg, rgba(234, 179, 8, 0.12) 0%, var(--pz-bg-subtle) 100%) !important;
+  }
+
+  .ranking-row.cost-row.is-podium-first {
+    background: linear-gradient(90deg, rgba(239, 68, 68, 0.15) 0%, var(--pz-bg-subtle) 100%) !important;
+  }
+
+  .sim-group-card.costs-group {
+    border-top-color: #94a3b8 !important;
+  }
+
+  .sim-group-card.commercial-group {
+    border-top-color: #38bdf8 !important;
+  }
+
+  .result-cell.commercial-price-cell.is-highlight {
+    border-color: rgba(56, 189, 248, 0.4) !important;
+    background: rgba(14, 165, 233, 0.1) !important;
+
+    .result-value {
+      color: #38bdf8 !important;
+    }
+  }
+
+  .result-cell.metric-total-cost .cost-sum-value {
+    color: #f87171 !important;
+  }
+
+  .result-cell.metric-profit .profit-num,
+  .result-cell.metric-margin .margin-num {
+    color: #34d399 !important;
+  }
+
+  .breakdown-row.addon-row.packaging-row {
+    background: rgba(56, 189, 248, 0.1) !important;
+    border-color: rgba(56, 189, 248, 0.25) !important;
+
+    .packaging-icon .mat-icon {
+      color: #38bdf8 !important;
+    }
+  }
+
+  .breakdown-row.addon-row.loss-row {
+    background: rgba(245, 158, 11, 0.1) !important;
+    border-color: rgba(245, 158, 11, 0.25) !important;
+
+    .loss-icon .mat-icon {
+      color: #fbbf24 !important;
+    }
+  }
+
+  .chart-scroll-wrap {
+    scrollbar-color: #475569 transparent;
   }
 }
 
 // ---------------------------------------------------------------------------
 // Responsividade
 // ---------------------------------------------------------------------------
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .dashboard-header {
     flex-direction: column;
     align-items: flex-start;
@@ -1027,6 +1876,41 @@
 
     .refresh-btn {
       width: 100%;
+    }
+  }
+
+  .chart-sub-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 12px 16px;
+  }
+
+  .chart-controls-wrap {
+    width: 100%;
+    justify-content: space-between;
+
+    .chart-size-select-wrap {
+      width: 100%;
+
+      .compact-select {
+        width: 100%;
+      }
+    }
+
+    .chart-modes-segmented {
+      width: 100%;
+      justify-content: space-between;
+      overflow-x: auto;
+    }
+  }
+
+  .breakdown-row {
+    grid-template-columns: 1fr auto;
+    gap: 8px 12px;
+
+    .item-share-box {
+      display: none;
     }
   }
 
