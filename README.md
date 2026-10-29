@@ -1,4 +1,4 @@
-# 🍕 Pizzaria Lucrativa — SaaS Multi-Tenant de Precificação e Gestão Operacional
+# 🍕 Pizzaria Lucrativa — SaaS Multi-Tenant de Precificação e Gestão Operacional Blueprint
 
 [![.NET 8](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
 [![Angular 18](https://img.shields.io/badge/Angular-18-DD0031?logo=angular&logoColor=white)](https://angular.dev/)
@@ -14,7 +14,11 @@
 
 ## 📌 Sumário
 
-- [Visão Geral & Proposta de Valor](#-visão-geral--proposta-de-valor)
+- [System Overview & Proposta de Valor](#-system-overview--proposta-de-valor)
+- [Subdirectories & System Boundaries](#-subdirectories--system-boundaries)
+- [Global Invariants](#-global-invariants)
+- [Global Side Effects](#-global-side-effects)
+- [System Verification](#-system-verification)
 - [Arquitetura do Sistema](#-arquitetura-do-sistema)
 - [Fluxo Operacional de Ponta a Ponta](#-fluxo-operacional-de-ponta-a-ponta)
 - [Principais Funcionalidades](#-principais-funcionalidades)
@@ -31,7 +35,7 @@
 
 ---
 
-## 💡 Visão Geral & Proposta de Valor
+## 💡 System Overview & Proposta de Valor
 
 A maioria das pizzarias sofre com **perda de margem invisível**: variação frequente nos insumos (farinha, laticínios, carnes), complexidade no cálculo de pizzas mistas (meio a meio / 4 sabores), ausência de rateio de custos fixos operacionais e falta de baixa automática no estoque.
 
@@ -41,6 +45,50 @@ O **Pizzaria Lucrativa** resolve esses gargalos integrando:
 3. **Fila Kanban da Cozinha**: Interface em tempo real para os pizzaiolos monitorarem itens pendentes, em preparo e finalizados.
 4. **Cardápio Digital Público**: Link customizado (`/menu/{slug}`) para clientes consultarem sabores e realizarem pedidos online diretamente pelo smartphone.
 5. **DRE e Lucro Real**: Consolidação diária, por produto e por canal (balcão, delivery, app), calculando o Custo de Mercadoria Vendida (CMV) real e a margem de contribuição líquida.
+
+---
+
+## 🗺️ Subdirectories & System Boundaries
+
+- **backend**: [backend](./backend/README.md) - Solução .NET 8 em Clean Architecture contendo camadas de Domínio puro, Aplicação, Infraestrutura EF Core e API REST.
+  - [PizzariaLucrativa.Domain](./backend/src/PizzariaLucrativa.Domain/README.md): Núcleo puro de regras de negócio, entidades multi-tenant e calculadoras sem I/O.
+  - [PizzariaLucrativa.Application](./backend/src/PizzariaLucrativa.Application/README.md): Casos de uso, interfaces de serviço, DTOs, validadores FluentValidation e assistente Gemini.
+  - [PizzariaLucrativa.Infrastructure](./backend/src/PizzariaLucrativa.Infrastructure/README.md): Persistência relacional (`AppDbContext`), Identity Core, filas assíncronas e cliente REST Gemini.
+  - [PizzariaLucrativa.Api](./backend/src/PizzariaLucrativa.Api/README.md): Ponto de entrada HTTP, controllers REST v1, middlewares de exceção/tenant e Swagger.
+- **frontend**: [frontend](./frontend/README.md) - SPA e PWA Angular 18 construído com Signals e Angular Material.
+  - [frontend/src](./frontend/src/README.md): Código-fonte da aplicação web incluindo shell master, páginas públicas de cardápio e 18 módulos de funcionalidades operacionais.
+
+---
+
+## 🔒 Global Invariants
+
+- **Multi-Tenant Data Isolation**: Todas as operações de banco de dados e consultas de serviço impõem isolamento rigoroso por `TenantId` via `ITenantProvider` e `HasQueryFilter` no EF Core. Nenhum tenant tem visibilidade ou capacidade de alterar registros de outro estabelecimento.
+- **Pure Calculation Predictability**: Os motores de cálculo matemático e de estoque em `PizzariaLucrativa.Domain.Services` (`PricingCalculator`, `ProfitReportCalculator`, `StockUsageCalculator`, `UnitConverter`) são funções puras e determinísticas, sem dependência de I/O externo ou estados mutáveis.
+- **Authentication & RBAC**: Todos os endpoints autenticados exigem JWT Bearer token emitido internamente com verificação de papéis (`Owner`, `Atendente`, `Pizzaiolo`, `Garcom`). Rotas com política `OwnerOnly` são restritas estritamente ao papel `Owner`.
+- **Dimensional Compatibility**: Conversões de medidas (`UnitConverter`) rejeitam estritamente conversões entre grandezas físicas incompatíveis (massa vs. volume).
+- **PT-BR Locale Standardization**: Todas as apresentações monetárias e decimais seguem a convenção brasileira (`pt-BR`, `R$`, vírgula decimal).
+
+---
+
+## ⚡ Global Side Effects
+
+- **Database State Mutation**: Persiste transações e registros relacionais no SQLite (desenvolvimento) ou SQL Server (produção) via `AppDbContext`.
+- **Asynchronous Recalculation Worker**: Alterações em insumos ou preparos postam identificadores na fila de background (`Channel<Guid>`), desencadeando recálculo assíncrono em cascata de fichas técnicas e combos.
+- **Outbound AI Requests**: O módulo do assistente inteligente dispara requisições HTTPS externas para a API REST do Google Gemini (`generativelanguage.googleapis.com`) usando streaming e function-calling.
+- **Third-Party Integrations**: Comunica-se com o gateway de WhatsApp (`Evolution API v2`) para automação de mensagens e com a API do ViaCEP para preenchimento automático de endereços no cardápio público.
+
+---
+
+## 🧪 System Verification
+
+- Backend Tests:
+  ```bash
+  dotnet test backend/PizzariaLucrativa.slnx
+  ```
+- Frontend Tests:
+  ```bash
+  npm test --prefix frontend
+  ```
 
 ---
 
@@ -220,7 +268,7 @@ sequenceDiagram
 ├── docs/                                     # Documentação técnica e funcional completa (01 a 11)
 ├── docker-compose.yml                        # Orquestração do Backend, Frontend e Banco
 ├── docker-compose.evolution.yml              # Orquestração da Evolution API (WhatsApp)
-└── README.md                                 # Apresentação principal do projeto
+└── README.md                                 # Blueprint principal do projeto
 ```
 
 ---
