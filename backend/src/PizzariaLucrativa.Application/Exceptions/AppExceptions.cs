@@ -40,3 +40,11 @@ public sealed class UnauthorizedException : Exception
     {
     }
 }
+
+/// <summary>Acesso proibido / suspenso → HTTP 403.</summary>
+public sealed class ForbiddenException : Exception
+{
+    public ForbiddenException(string message) : base(message)
+    {
+    }
+}

@@ -44,9 +44,14 @@ try
         app.Services,
         app.Configuration.GetValue<bool>("Seed:Demo"));
 
+    if (await SystemAdminCliHandler.TryHandleCliAsync(app.Services, args))
+    {
+        return;
+    }
+
     app.Run();
 }
-catch (Exception exception)
+catch (Exception exception) when (exception is not HostAbortedException)
 {
     Log.Fatal(exception, "A API falhou ao iniciar.");
     throw;

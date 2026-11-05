@@ -30,6 +30,8 @@ public static class IdentityExtensions
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUserAdminService, UserAdminService>();
+        services.AddScoped<ISystemAdminService, SystemAdminService>();
+        services.AddScoped<IPasswordHasher<Domain.Entities.SystemAdmin>, PasswordHasher<Domain.Entities.SystemAdmin>>();
 
         return services;
     }

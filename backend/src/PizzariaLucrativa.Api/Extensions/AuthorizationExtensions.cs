@@ -29,6 +29,9 @@ public static class AuthorizationExtensions
 
             options.AddPolicy("ProducaoOuOwner", policy =>
                 policy.RequireAssertion(context => IsInRole(context.User, AppRoles.Pizzaiolo, AppRoles.Owner)));
+
+            options.AddPolicy("SystemAdminOnly", policy =>
+                policy.RequireClaim("system_admin", "true"));
         });
 
         return services;

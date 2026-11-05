@@ -111,3 +111,11 @@ Thumbs.db
 # Misc
 *.bak
 *.tmp
+
+# ------------------------------------------------------------------------------
+# EGM (Elephant-and-Goldfish Model) Transient Review Reports
+# ------------------------------------------------------------------------------
+*_report.md
+*_REPORT.md
+concepts_brief.md
+design_draft.md

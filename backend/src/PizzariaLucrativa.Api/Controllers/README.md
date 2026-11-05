@@ -25,20 +25,26 @@ Exposes RESTful HTTP endpoints for all business modules in PizzariaLucrativa, in
 - `ReportsController` [`ReportsController.cs:ReportsController`]: Detailed profit reports by day, product, and sales channel (`[Authorize(Policy = "OwnerOnly")]`).
 - `SizesController` [`SizesController.cs:SizesController`]: Pizza size dimensions and slice capacity configuration (`[Authorize]`).
 - `StockController` [`StockController.cs:StockController`]: Current inventory balances, manual movement entries, and replenishment advice (`[Authorize]`).
+- `SystemAdminAuthController` [`SystemAdminAuthController.cs:SystemAdminAuthController`]: Global platform administrator login, password reset request, and password reset token completion (`[AllowAnonymous]`, route `api/v{version:apiVersion}/system-admin/auth`).
+- `SystemAdminTenantsController` [`SystemAdminTenantsController.cs:SystemAdminTenantsController`]: Global platform administrator tenant governance, paged pizzeria catalog listing, and immediate deactivation/reactivation status management (`[Authorize(Policy = "SystemAdminOnly")]`, route `api/v{version:apiVersion}/system-admin/tenants`).
 - `TechnicalSheetsController` [`TechnicalSheetsController.cs:TechnicalSheetsController`]: Technical sheet composition, CMV calculation, and margin analysis (`[Authorize]`).
 - `TenantController` [`TenantController.cs:TenantController`]: Tenant profile configuration and pizzeria settings (`[Authorize]`).
 - `UsersController` [`UsersController.cs:UsersController`]: Employee user management, permissions, and role assignment (`[Authorize(Policy = "OwnerOnly")]`).
 
 ## Invariants
-- `[ApiControllerBase.cs:ApiControllerBase]` All controllers inherit from `ApiControllerBase` and follow `api/v{version:apiVersion}/[controller]` routing.
-- `[AuthController.cs, PublicController.cs]` Only `AuthController` and `PublicController` allow anonymous access via `[AllowAnonymous]`; all other controllers require authentication (`[Authorize]`).
+- `[ApiControllerBase.cs:ApiControllerBase]` All controllers inherit from `ApiControllerBase` and follow `api/v{version:apiVersion}/[controller]` routing (or custom subroutes).
+- `[AuthController.cs, PublicController.cs, SystemAdminAuthController.cs]` Only `AuthController`, `PublicController`, and `SystemAdminAuthController` allow anonymous access via `[AllowAnonymous]`; all other controllers require authentication (`[Authorize]`).
+- `[SystemAdminTenantsController.cs:SystemAdminTenantsController]` Restricted exclusively to global platform administrators via `[Authorize(Policy = "SystemAdminOnly")]` requiring the claim `system_admin = "true"`.
+- `[SystemAdminAuthController.cs, SystemAdminTenantsController.cs]` Operate globally across the platform without requiring a `tenant_id` claim in the security context.
 - `[AiController.cs, AnalyticsController.cs, DashboardController.cs, ReportsController.cs, UsersController.cs]` Restrict access strictly to users possessing the `Owner` role via `[Authorize(Policy = "OwnerOnly")]`.
-- `[PublicController.cs:PublicController]` Tenant context is resolved exclusively from the URL `{slug}` parameter.
+- `[PublicController.cs:PublicController]` Tenant context is resolved exclusively from the URL `{slug}` parameter; inactive or nonexistent tenants yield HTTP 404.
 
 ## Side Effects
-- Mutates database state via Application services upon `POST`, `PUT`, `DELETE` requests.
+- Mutates database state via Application and Infrastructure services upon `POST`, `PUT`, `PATCH`, and `DELETE` requests.
+- `[SystemAdminTenantsController.cs]` Invalidates in-memory cache (`IMemoryCache`) for tenant active state and slug resolution upon status changes.
+- `[SystemAdminAuthController.cs]` Generates cryptographically secure password reset tokens with SHA-256 hash storage and 15-minute expiration.
 - Invokes external Google Gemini AI endpoints for chat completions in `AiController`.
-- Writes JSON error responses upon validation or unhandled exceptions.
+- Writes standard JSON error responses upon validation or unhandled exceptions via `ExceptionMiddleware`.
 
 ## Verification
-- Run: `dotnet test`
+- Run: `dotnet test backend/PizzariaLucrativa.slnx`

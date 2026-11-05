@@ -7,6 +7,8 @@ const KEYS = {
   refreshToken: 'pz.refreshToken',
   expiresAt: 'pz.expiresAt',
   pizzeriaName: 'pz.pizzeriaName',
+  systemAdminToken: 'pz.systemAdminToken',
+  systemAdminUser: 'pz.systemAdminUser',
 } as const;
 
 /**
@@ -59,6 +61,30 @@ export class StorageService {
 
   setPizzeriaName(name: string): void {
     this.set(KEYS.pizzeriaName, name);
+  }
+
+  getSystemAdminToken(): string | null {
+    return this.get(KEYS.systemAdminToken);
+  }
+
+  getSystemAdminUser(): { email: string; fullName: string } | null {
+    const raw = this.get(KEYS.systemAdminUser);
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  }
+
+  saveSystemAdminSession(token: string, user: { email: string; fullName: string }): void {
+    this.set(KEYS.systemAdminToken, token);
+    this.set(KEYS.systemAdminUser, JSON.stringify(user));
+  }
+
+  clearSystemAdminSession(): void {
+    this.remove(KEYS.systemAdminToken);
+    this.remove(KEYS.systemAdminUser);
   }
 
   private get(key: string): string | null {

@@ -47,6 +47,7 @@ public class AppDbContext : IdentityDbContext<AppUser>, IAppDbContext
     public DbSet<AiMessage> AiMessages => Set<AiMessage>();
     public DbSet<AiUsageRecord> AiUsageRecords => Set<AiUsageRecord>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<SystemAdmin> SystemAdmins => Set<SystemAdmin>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

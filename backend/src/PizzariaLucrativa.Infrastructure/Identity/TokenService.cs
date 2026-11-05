@@ -31,6 +31,12 @@ public interface ITokenService
     /// claim <c>role</c> por papel do usuário — docs/10, Sprint 1).
     /// </summary>
     Task<(string AccessToken, int ExpiresIn)> CreateAccessTokenAsync(AppUser user);
+
+    /// <summary>
+    /// Gera o access token JWT exclusivo do Administrador Global do Sistema (claims: sub, email, name, system_admin: true).
+    /// Não emite claim tenant_id.
+    /// </summary>
+    (string Token, DateTime ExpiresAt) CreateSystemAdminToken(Domain.Entities.SystemAdmin admin);
 }
 
 /// <summary>Emissão de access token JWT HS256 com expiração curta (15 min).</summary>
@@ -91,5 +97,33 @@ public sealed class TokenService : ITokenService
         // Contrato estável (docs/07): expiresIn em segundos cheios da validade, sem
         // depender do tempo decorrido na emissão.
         return (token, _options.AccessTokenMinutes * 60);
+    }
+
+    public (string Token, DateTime ExpiresAt) CreateSystemAdminToken(Domain.Entities.SystemAdmin admin)
+    {
+        var expiresAt = DateTimeOffset.UtcNow.AddMinutes(_options.AccessTokenMinutes);
+
+        var claims = new List<Claim>
+        {
+            new(JwtRegisteredClaimNames.Sub, admin.Id.ToString()),
+            new(JwtRegisteredClaimNames.Email, admin.Email),
+            new(JwtRegisteredClaimNames.Name, admin.FullName),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N")),
+            new("system_admin", "true")
+        };
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Key));
+        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var jwt = new JwtSecurityToken(
+            issuer: _options.Issuer,
+            audience: _options.Audience,
+            claims: claims,
+            notBefore: DateTime.UtcNow,
+            expires: expiresAt.UtcDateTime,
+            signingCredentials: credentials);
+
+        var token = new JwtSecurityTokenHandler().WriteToken(jwt);
+        return (token, expiresAt.UtcDateTime);
     }
 }

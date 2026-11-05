@@ -423,6 +423,7 @@ Para aprofundamento na concepção, decisões de engenharia e regras de negócio
 9. [Plano de Implementação](docs/09-plano-de-implementacao.md) — Fases de desenvolvimento e critérios de aceite.
 10. [Histórico de Sprints](docs/10-sprints-pedidos-producao-lucro.md) — Evolução das sprints operacionais.
 11. [Integração Evolution API](docs/11-integracao-evolution-api-whatsapp.md) — Arquitetura de mensageria WhatsApp e webhooks.
+12. [Guia Prático das Skills EGM](docs/13-guia-skills-egm.md) — Manual de uso das ferramentas EGM (Brainstorm, Draft, Review, Bootstrap, Drift).
 
 ---
 

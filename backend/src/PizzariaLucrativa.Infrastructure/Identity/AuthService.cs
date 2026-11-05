@@ -94,6 +94,10 @@ public sealed class AuthService : IAuthService
         if (user is null || !await _userManager.CheckPasswordAsync(user, command.Password))
             throw new UnauthorizedException("E-mail ou senha inválidos.");
 
+        var tenant = await _db.Tenants.AsNoTracking().FirstOrDefaultAsync(t => t.Id == user.TenantId, ct);
+        if (tenant is null || !tenant.IsActive)
+            throw new ForbiddenException("Esta pizzaria encontra-se temporariamente desativada.");
+
         return await IssueTokensAsync(user, ct);
     }
 
@@ -112,6 +116,14 @@ public sealed class AuthService : IAuthService
         var user = await _userManager.FindByIdAsync(stored.UserId);
         if (user is null)
             throw new UnauthorizedException("Refresh token inválido ou expirado.");
+
+        var tenant = await _db.Tenants.AsNoTracking().FirstOrDefaultAsync(t => t.Id == user.TenantId, ct);
+        if (tenant is null || !tenant.IsActive)
+        {
+            stored.RevokedAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync(ct);
+            throw new ForbiddenException("Esta pizzaria encontra-se temporariamente desativada.");
+        }
 
         // Rotação: revoga o token usado e emite um novo par (NF-T01).
         stored.RevokedAt = DateTime.UtcNow;

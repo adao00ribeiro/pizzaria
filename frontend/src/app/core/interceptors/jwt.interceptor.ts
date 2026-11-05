@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { catchError, switchMap, throwError } from 'rxjs';
 
 import { AuthService } from '../services/auth.service';
+import { StorageService } from '../services/storage.service';
 
 /**
  * Adiciona `Authorization: Bearer …` a todas as requisições.
@@ -13,10 +14,15 @@ import { AuthService } from '../services/auth.service';
  */
 export const jwtInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthService);
+  const storage = inject(StorageService);
   const snack = inject(MatSnackBar);
   const router = inject(Router);
 
-  const token = auth.accessToken();
+  const isSystemAdminReq = req.url.includes('/system-admin/');
+  const token = isSystemAdminReq
+    ? storage.getSystemAdminToken()
+    : auth.accessToken();
+
   const authReq = token
     ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
     : req;
@@ -25,6 +31,14 @@ export const jwtInterceptor: HttpInterceptorFn = (req, next) => {
     catchError((err) => {
       const isUnauthorized = err instanceof HttpErrorResponse && err.status === 401;
       const isAuthEndpoint = req.url.includes('/auth/');
+
+      if (isSystemAdminReq) {
+        if (isUnauthorized && !isAuthEndpoint) {
+          storage.clearSystemAdminSession();
+          router.navigate(['/system-admin/login']);
+        }
+        return throwError(() => err);
+      }
 
       if (!isUnauthorized || isAuthEndpoint) {
         return throwError(() => err);

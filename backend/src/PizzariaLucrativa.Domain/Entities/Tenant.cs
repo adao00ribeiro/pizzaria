@@ -12,6 +12,11 @@ public class Tenant
     /// </summary>
     public string? Slug { get; set; }
 
+    // Governança Administrativa
+    public bool IsActive { get; set; } = true;
+    public DateTime? DeactivatedAt { get; set; }
+    public string? DeactivationReason { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
 }

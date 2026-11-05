@@ -1,0 +1,157 @@
+<mat-sidenav-container class="admin-shell-container">
+  <!-- Menu Lateral / Sidebar de Governança Global -->
+  <mat-sidenav
+    class="admin-sidenav"
+    [mode]="wide() ? 'side' : 'over'"
+    [opened]="opened()"
+    (openedChange)="opened.set($event)"
+  >
+    <!-- Topo / Brand da Plataforma -->
+    <div class="sidenav-brand">
+      <div class="brand-avatar">
+        <mat-icon class="shield-icon">security</mat-icon>
+      </div>
+      <div class="brand-info">
+        <span class="brand-title">PizzariaLucrativa</span>
+        <div class="brand-badge">
+          <mat-icon>admin_panel_settings</mat-icon>
+          <span>Governança Global</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navegação do Sidebar -->
+    <div class="sidenav-scroll-area">
+      <mat-nav-list class="admin-nav-list">
+        <div class="menu-section-header">MODERAÇÃO & PLATAFORMA</div>
+
+        <a
+          mat-list-item
+          routerLink="/system-admin/tenants"
+          routerLinkActive="active"
+          (click)="onNavClick()"
+          class="nav-item"
+        >
+          <mat-icon matListItemIcon>storefront</mat-icon>
+          <span matListItemTitle>Pizzarias Cadastradas</span>
+        </a>
+
+        <div class="menu-divider"></div>
+
+        <div class="menu-section-header">SEGURANÇA & SISTEMA</div>
+
+        <div class="system-status-box">
+          <div class="status-item">
+            <mat-icon class="status-icon active">verified_user</mat-icon>
+            <div class="status-details">
+              <span class="status-title">Administrador Único</span>
+              <span class="status-desc">Invariante e Governança Ativa</span>
+            </div>
+          </div>
+        </div>
+      </mat-nav-list>
+    </div>
+
+    <!-- Rodapé do Sidebar com Perfil e Alternador de Tema -->
+    <div class="sidenav-footer">
+      <div class="admin-user-card">
+        <div class="admin-avatar">
+          <mat-icon>account_circle</mat-icon>
+        </div>
+        <div class="admin-meta">
+          <span class="admin-name">{{ adminService.currentUser()?.fullName || 'Administrador' }}</span>
+          <span class="admin-email" [title]="adminService.currentUser()?.email || ''">
+            {{ adminService.currentUser()?.email || 'admin@plataforma.com' }}
+          </span>
+        </div>
+      </div>
+
+      <div class="footer-actions">
+        <!-- Botão de Tema (Claro / Escuro) -->
+        <button
+          mat-stroked-button
+          type="button"
+          class="theme-toggle-btn"
+          (click)="theme.toggleTheme()"
+          [matTooltip]="theme.isDark() ? 'Alternar para Tema Claro' : 'Alternar para Tema Escuro'"
+        >
+          <mat-icon>{{ theme.isDark() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+          <span>{{ theme.isDark() ? 'Tema Claro' : 'Tema Escuro' }}</span>
+        </button>
+
+        <!-- Botão Logout -->
+        <button
+          mat-icon-button
+          color="warn"
+          type="button"
+          (click)="logout()"
+          matTooltip="Encerrar Sessão"
+          aria-label="Encerrar Sessão"
+        >
+          <mat-icon>logout</mat-icon>
+        </button>
+      </div>
+    </div>
+  </mat-sidenav>
+
+  <!-- Conteúdo Principal e Barra Superior -->
+  <mat-sidenav-content class="admin-sidenav-content">
+    <mat-toolbar class="admin-toolbar">
+      <button
+        mat-icon-button
+        type="button"
+        class="menu-toggle-btn"
+        (click)="opened.set(!opened())"
+        [matTooltip]="opened() ? 'Recolher Menu' : 'Expandir Menu'"
+        aria-label="Alternar Menu Lateral"
+      >
+        <mat-icon>{{ opened() && wide() ? 'menu_open' : 'menu' }}</mat-icon>
+      </button>
+
+      <div class="toolbar-title-group">
+        <span class="toolbar-title">Painel de Governança Global</span>
+        <span class="toolbar-breadcrumb">Moderação Centralizada</span>
+      </div>
+
+      <span class="spacer"></span>
+
+      <!-- Ações Topbar -->
+      <div class="toolbar-actions">
+        <!-- Alternar Tema Claro/Escuro -->
+        <button
+          mat-icon-button
+          type="button"
+          class="theme-icon-btn"
+          (click)="theme.toggleTheme()"
+          [matTooltip]="theme.isDark() ? 'Mudar para tema claro' : 'Mudar para tema escuro'"
+          aria-label="Alternar tema claro e escuro"
+        >
+          <mat-icon>{{ theme.isDark() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+        </button>
+
+        <!-- Chip de Perfil -->
+        <div class="admin-chip" [matTooltip]="adminService.currentUser()?.email || 'admin@plataforma.com'">
+          <mat-icon class="shield-badge">shield</mat-icon>
+          <span class="admin-chip-label">{{ adminService.currentUser()?.fullName || 'Admin Global' }}</span>
+        </div>
+
+        <!-- Sair -->
+        <button
+          mat-icon-button
+          type="button"
+          (click)="logout()"
+          matTooltip="Encerrar Sessão"
+          aria-label="Sair do Painel"
+          class="logout-btn"
+        >
+          <mat-icon>logout</mat-icon>
+        </button>
+      </div>
+    </mat-toolbar>
+
+    <!-- Área de Exibição das Páginas (Router Outlet) -->
+    <main class="page-content-wrapper">
+      <router-outlet />
+    </main>
+  </mat-sidenav-content>
+</mat-sidenav-container>

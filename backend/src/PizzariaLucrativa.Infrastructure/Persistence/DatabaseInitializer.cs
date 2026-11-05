@@ -29,6 +29,11 @@ public static class DatabaseInitializer
         var roleSeeder = scope.ServiceProvider.GetRequiredService<RoleSeeder>();
         await roleSeeder.SeedAsync();
 
+        // Seed do Administrador Global do Sistema (singleton)
+        var adminHasher = scope.ServiceProvider.GetRequiredService<Microsoft.AspNetCore.Identity.IPasswordHasher<Domain.Entities.SystemAdmin>>();
+        var configuration = scope.ServiceProvider.GetService<Microsoft.Extensions.Configuration.IConfiguration>();
+        await EnsureSystemAdminAsync(db, adminHasher, configuration, logger);
+
         // Backfill do slug público em tenants antigos (docs/10, Sprint 1).
         await BackfillTenantSlugsAsync(db, logger);
 
@@ -125,5 +130,33 @@ public static class DatabaseInitializer
 
         await db.SaveChangesAsync();
         logger.LogInformation("Vinculados {Count} insumos de estoque a bebidas existentes.", beveragesWithoutIngredient.Count);
+    }
+
+    private static async Task EnsureSystemAdminAsync(
+        AppDbContext db,
+        Microsoft.AspNetCore.Identity.IPasswordHasher<Domain.Entities.SystemAdmin> hasher,
+        Microsoft.Extensions.Configuration.IConfiguration? config,
+        ILogger logger)
+    {
+        if (await db.SystemAdmins.AnyAsync())
+            return;
+
+        var email = config?["SystemAdmin:InitialEmail"] ?? "admin@plataforma.com";
+        var password = config?["SystemAdmin:InitialPassword"] ?? "Admin@Pizzaria2026!";
+        var fullName = config?["SystemAdmin:InitialFullName"] ?? "Administrador do Sistema";
+
+        var admin = new Domain.Entities.SystemAdmin
+        {
+            Id = Domain.Entities.SystemAdmin.SingletonId,
+            Email = email.Trim().ToLowerInvariant(),
+            FullName = fullName.Trim(),
+            CreatedAt = DateTime.UtcNow
+        };
+        admin.PasswordHash = hasher.HashPassword(admin, password);
+
+        db.SystemAdmins.Add(admin);
+        await db.SaveChangesAsync();
+
+        logger.LogInformation("Administrador do Sistema inicial provisionado com e-mail: {Email}", admin.Email);
     }
 }

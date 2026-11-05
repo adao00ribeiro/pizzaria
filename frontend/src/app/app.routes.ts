@@ -11,6 +11,11 @@ export const routes: Routes = [
   { path: 'checkout/:slug', loadComponent: () => import('./features/public/public-checkout.page').then(m => m.PublicCheckoutPage) },
   { path: 'acompanhar/:slug/:code', loadComponent: () => import('./features/public/public-tracking.page').then(m => m.PublicTrackingPage) },
   {
+    path: 'system-admin',
+    loadChildren: () =>
+      import('./features/system-admin/system-admin.routes').then((m) => m.SYSTEM_ADMIN_ROUTES),
+  },
+  {
     path: '',
     loadComponent: () => import('./layout/shell/shell.component').then(m => m.ShellComponent),
     canActivate: [authGuard],

@@ -14,4 +14,4 @@ Provides common base controller abstractions and conventions for all HTTP API en
 - None
 
 ## Verification
-- Run: `dotnet test`
+- Run: `dotnet test backend/PizzariaLucrativa.slnx`

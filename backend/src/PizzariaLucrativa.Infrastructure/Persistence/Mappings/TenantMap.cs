@@ -12,5 +12,9 @@ public sealed class TenantMap : IEntityTypeConfiguration<Tenant>
         builder.Property(t => t.Slug).HasMaxLength(40);
         // Único entre tenants (Slug nulo permitido para legacy/backfill).
         builder.HasIndex(t => t.Slug).IsUnique();
+
+        builder.Property(t => t.IsActive).HasDefaultValue(true);
+        builder.Property(t => t.DeactivatedAt).IsRequired(false);
+        builder.Property(t => t.DeactivationReason).HasMaxLength(300).IsRequired(false);
     }
 }

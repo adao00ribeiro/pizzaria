@@ -77,6 +77,9 @@ public sealed class ExceptionMiddleware
             case UnauthorizedException unauthorized:
                 return (401, unauthorized.Message, Array.Empty<ErrorItem>());
 
+            case ForbiddenException forbidden:
+                return (403, forbidden.Message, Array.Empty<ErrorItem>());
+
             case NotFoundException notFound:
                 return (404, notFound.Message, Array.Empty<ErrorItem>());
 

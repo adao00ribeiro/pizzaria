@@ -228,7 +228,8 @@ body.dark-theme,
   }
 
   // Sidebar
-  .pz-sidenav {
+  .pz-sidenav,
+  .admin-sidenav {
     background: #13151c !important;
     border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
   }
